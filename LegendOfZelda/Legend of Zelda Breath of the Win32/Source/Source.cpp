@@ -13,9 +13,11 @@ int			innerWidth, innerHeight;
 // pic and window
 int			app_Wid = 1920;
 int			app_Hei = 1080;
+int			player_Hei = 90;
+int			player_Wid = 96;
 int			bg_Wid = 1920;
 int			bg_Hei = 1080;
-int			x, y;
+int			x , y;
 // player animation
 int			xpic = 144, ypic = 0;
 int			playerX = app_Wid / 2 - 72, playerY = 275;
@@ -25,20 +27,23 @@ struct BG {
 	HBITMAP map;
 	int x;
 	int y;
-	int cX;					// ETT RUM:	y=176 px, x=256px
-	int cy;
+	int cX = 256;					// ETT RUM:	y=176 px, x=256px y = 168??
+	int cY = 168;
 	int sizeX = 4096;
 	int sizeY = 1344;
 };
 struct user {
 	HDC hdc;
 	HBITMAP map;
-	int x;
-	int y;
-	int cX;					// en sprite: y=176 px, x=256px
-	int cy;
-	int sizeX = 4096;
-	int sizeY = 1344;
+	int x = 1920 / 2;
+	int y = 1080 / 2;
+	int cX = 0;					// en lin gå: y=16 px, x=15px
+	int cY = 0;
+	int sizeX = 15;
+	int sizeY = 16;
+	//int sizeX = 4096;
+	//int sizeY = 1344;
+	char face = 'D';
 };
 // All mighty
 BG background;
@@ -57,7 +62,11 @@ HBITMAP		bitmapbuff;				// lagrar bilden till bitmapen
 // Funktioner ---------------------------------------------------------------
 
 void		exitGame();				// avsluta spelet 
-
+void		runRight();				// spelaren springer höger
+void		runLeft();				// spelaren springer vänster
+void		runUp();				// spelaren springer uppåt
+void		runDown();				// spelaren springer neråt
+void		playerAnimation();		// animation för spelaren
 // Funktioner för windows ----------------------------------------------------
 LRESULT		CALLBACK	winProc(HWND, UINT, WPARAM, LPARAM);
 ATOM 		doRegister(HINSTANCE);
@@ -123,7 +132,18 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		running = false;
 		break;
 	case WM_KEYDOWN:
-		
+		if (wParam == VK_RIGHT) {		// rör spelaren till vänster
+			runRight();
+		}
+		else if (wParam == VK_LEFT) {		// rör spelaren till höger
+			runLeft();
+		}
+		else if (wParam == VK_UP) {		// rör spelaren till höger
+			runUp();
+		}
+		else if (wParam == VK_DOWN) {		// rör spelaren till höger
+			runDown();
+		}
 		break;
 	case WM_KEYUP:							
 
@@ -141,21 +161,85 @@ void exitGame() {				// stänger ner spelet
 	running = false;
 	PostQuitMessage(0);
 }
-
+//---------------------------------------------------------------------
+void runRight() {
+	/*
+	runL = true;
+	idleL = true;			// ändrar så att run och idle Left blir true, så när spelaren slutar springa så spelas rätt idle animation
+	runR = false;
+	idleR = false;
+	*/
+	player.x +=5;
+	player.face = 'R';
+}
+//---------------------------------------------------------------------
+void runLeft() {
+	player.x -= 5;
+	player.face = 'L';
+}
 //---------------------------------------------------------------------------
+void runUp() {
+	/*
+	runL = true;
+	idleL = true;			// ändrar så att run och idle Left blir true, så när spelaren slutar springa så spelas rätt idle animation
+	runR = false;
+	idleR = false;
+	*/
+	player.y -= 5;
+	player.face = 'U';
+}
+//---------------------------------------------------------------------
+void runDown() {
+	player.y += 5;
+	player.face = 'D';
+}
+//----------------------------------------------------------------------
+void playerAnimation() {
+	if (player.face == 'D') {
+		player.cX = 0;
+		player.cY += 31;
+		if (player.cY > 31) {
+			player.cY = 0;
+		}
+	}
+	else if (player.face == 'L') {
+		player.cX = 31;
+		player.cY += 31;
+		if (player.cY > 31) {
+			player.cY = 0;
+		}
+	}
+	else if (player.face == 'U') {
+		player.cX = 61;
+		player.cY += 31;
+		if (player.cY > 31) {
+			player.cY = 0;
+		}
+	}
+	else if (player.face == 'R') {
+		player.cX = 91;
+		player.cY += 31;
+		if (player.cY > 31) {
+			player.cY = 0;
+		}
+	}
+}
+//----------------------------------------------------------------------
 void update() {
 	static int counter = 0;
 	counter++;
-	
-}
+	if (counter % 24 == 0) {
+		playerAnimation();
+	}
 
+}
 //---------------------------------------------------------------------
 void render() {
 
 	//TransparentBLT(hdc till, x utskrift på skrämen, y utskrift på skärmen, hur brett den ska rita ut, hur högt, hdc ifrån, vart från bilden börjar ta x, vart från bilden börja ta y, x antal pixlar att ta, y antalet pixalr att ta, färg att ta bort)
 
-	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, 1792, 1176, 256, 168, COLORREF(RGB(255, 0, 255)));
-	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, player.hdc, 0, 0, 25.25, 20.2, COLORREF(RGB(255, 0, 255)));
+	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, 1792, 1176, background.cX, background.cY, COLORREF(RGB(255, 0, 255)));
+	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
 
 	// dubbelbuffring
 	BitBlt(hDC, 0, 0, innerWidth, innerHeight, bufferHDC, 0, 0, SRCCOPY);
@@ -228,10 +312,10 @@ int	initalizeAll(HWND hWnd) {
 	background.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	oldBitmap[0] = (HBITMAP)SelectObject(background.hdc, background.map);
 	
-	std::string text = "bilder/linkSprites.bmp";
-	background.hdc = CreateCompatibleDC(hDC);
-	background.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	oldBitmap[0] = (HBITMAP)SelectObject(background.hdc, background.map);
+	text = "bilder/linkSprites.bmp";
+	player.hdc = CreateCompatibleDC(hDC);
+	player.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[1] = (HBITMAP)SelectObject(player.hdc, player.map);
 
 
 	/*
