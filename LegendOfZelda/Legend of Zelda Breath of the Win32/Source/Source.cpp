@@ -21,16 +21,20 @@ int			x , y;
 // player animation
 int			xpic = 144, ypic = 0;
 int			playerX = app_Wid / 2 - 72, playerY = 275;
-
+// menu
+bool		menuActive = true;
+bool		pause = false;
+int			a = 0;
+// struct
 struct BG {
 	HDC hdc;
 	HBITMAP map;
 	int x;
 	int y;
-	int cX = 256;					// ETT RUM:	y=176 px, x=256px y = 168??
-	int cY = 168;
-	int sizeX = 4096;
-	int sizeY = 1344;
+	int cX = 1792;					// ETT RUM:	y=168 px, x=256px
+	int cY = 1176;
+	int sizeX = 256;
+	int sizeY = 168;
 };
 struct user {
 	HDC hdc;
@@ -41,15 +45,15 @@ struct user {
 	int cY = 0;
 	int sizeX = 15;
 	int sizeY = 16;
-	//int sizeX = 4096;
-	//int sizeY = 1344;
 	char face = 'D';
+	bool idle = true;
 };
 // All mighty
-BG background;
-user player;
+BG			background;
+user		player;
+char		map[180][92];
 // fonter
-HFONT		myFonts[2];
+HFONT		myFonts[3];
 // Device Contexts ----------------------------------------------------------
 HDC			hDC;					// V�r huvudsakliga DC - Till f�nstret
 HDC			spritesHDC;				// DC till player
@@ -60,14 +64,22 @@ HBITMAP		sprites;				// all the sprites
 HBITMAP		oldBitmap[2];			// Lagrar orginalbilderna
 HBITMAP		bitmapbuff;				// lagrar bilden till bitmapen
 // Funktioner ---------------------------------------------------------------
-
-void		exitGame();				// avsluta spelet 
 void		runRight();				// spelaren springer höger
 void		runLeft();				// spelaren springer vänster
 void		runUp();				// spelaren springer uppåt
 void		runDown();				// spelaren springer neråt
 void		playerAnimation();		// animation för spelaren
-// Funktioner för windows ----------------------------------------------------
+// menu
+void        newGame();				// startar spel från menyn
+void		instructions();			// instruktioner för spelet
+void		exitGame();				// avsluta spelet 
+void        printMenu();			// skriver ut menyn
+void		choice();				// vad för aval man väljer i menyn
+void        getActive();			// hämtar aktivt menyval
+// game progression
+void		entrance(char);			// flytta bakgrunden
+void		calculateBorder();		// räkna ut om man borde flyta backgrund
+// Funktioner för windows ---------------------------------------------------
 LRESULT		CALLBACK	winProc(HWND, UINT, WPARAM, LPARAM);
 ATOM 		doRegister(HINSTANCE);
 BOOL 		initInstance(HINSTANCE, int);
@@ -77,12 +89,13 @@ void		update();				// Alla uppdateringar
 void		render();				// Ritar ut bilden i f�nstret
 bool		framerate(int);			// Uppdateringsfrekvensen
 double		getFreq();
+//---------------------------------------------------------------------
 inline __int64 performanceCounter() noexcept {
 	LARGE_INTEGER li;
 	::QueryPerformanceCounter(&li);
 	return li.QuadPart;
 };
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 int WINAPI WinMain(_In_ HINSTANCE hi, _In_opt_ HINSTANCE hp, _In_ LPSTR lp, _In_ int n) {
 	UNREFERENCED_PARAMETER(hp);
 	UNREFERENCED_PARAMETER(lp);
@@ -98,14 +111,14 @@ int WINAPI WinMain(_In_ HINSTANCE hi, _In_opt_ HINSTANCE hp, _In_ LPSTR lp, _In_
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		if (framerate(20) == true) {
+		if (framerate(12) == true) {
 			render();
 			update();	// om menyn är igång upptatera inga animationer
 		}
 	}
 	return 0;
 }
-//-------------------------------------------------------------------------
+//---------------------------------------------------------------------
 bool framerate(int timeStamp) {
 	static __int64 last = performanceCounter();
 	if (((double)((performanceCounter() - last)) / CPUFreq) > timeStamp) {
@@ -114,7 +127,7 @@ bool framerate(int timeStamp) {
 	}
 	return false;
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 
 	switch (Msg) {
@@ -122,31 +135,43 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		initalizeAll(hWnd);
 		break;
 	case WM_LBUTTONDOWN:
-
+		if (menuActive == true) {			// om man är i menyn kör aktivt val
+			choice();
+			break;
+		}
 		break;
 	case WM_MOUSEMOVE:
-
+		if (menuActive == true) {			// om man är i menyn tracka musen
+			y = HIWORD(lParam);
+			getActive();
+		}
 		break;
 	case WM_CLOSE:
 		PostQuitMessage(0);
 		running = false;
 		break;
 	case WM_KEYDOWN:
-		if (wParam == VK_RIGHT) {		// rör spelaren till vänster
+		player.idle = false;
+		if (wParam == VK_RIGHT) {			// rör spelaren till vänster
 			runRight();
 		}
 		else if (wParam == VK_LEFT) {		// rör spelaren till höger
 			runLeft();
 		}
-		else if (wParam == VK_UP) {		// rör spelaren till höger
+		else if (wParam == VK_UP) {			// rör spelaren till höger
 			runUp();
 		}
 		else if (wParam == VK_DOWN) {		// rör spelaren till höger
 			runDown();
 		}
+		else if (wParam == VK_ESCAPE && menuActive == false) {		// öppnar menyn när man trycker på ESC
+			menuActive = true;
+			pause = true;
+		}
+		calculateBorder();
 		break;
 	case WM_KEYUP:							
-
+		player.idle = true;
 		break;
 	case WM_DESTROY:
 		releaseAll(hWnd);
@@ -162,134 +187,262 @@ void exitGame() {				// stänger ner spelet
 	PostQuitMessage(0);
 }
 //---------------------------------------------------------------------
+void newGame() {				// startar spel från menyn
+	player.x = 1920 / 2;
+	player.y = 1080 / 2;
+	player.face = 'D';
+	background.cX = 1792;    
+	background.cY = 1176;
+}
+//---------------------------------------------------------------------
+void instructions()	{	// instruktioner för spelet 
+	std::string text[5] = { "Walk left and Right using the Arrow Keys","Monsters are bad. Kill them by clicking on them and making cool explosions","Dont get touched by bad monsters.It hurts", "Get points by how many monsters you kill.", "good luck!" };
+	int langd = 5;
+	int instX = 320, instY = 0;
+
+	for (int n = 0; n < langd; n++) {
+		instY = 40 * (n + 1) + 120;
+		TextOut(bufferHDC, instX, instY, text[n].c_str(), text[n].size());
+	}
+}
+//---------------------------------------------------------------------
+void choice() {	 						// vad för aval man väljer i menyn
+	int ymenu = 300, xmenu = 100;
+	if (pause == true) {				// meny för paus
+		if (a == 0) {
+			menuActive = false;			// resume
+		}
+		else if (a == 1) {				// new game
+			newGame();
+			menuActive = false;
+		}
+		else if (a == 2) {				// instuctions
+			instructions();
+		}
+		else if (a == 3) {				// exit
+			exitGame();
+		}
+	}
+	else {								// meny när man startar spelet
+		if (a == 0) {					// new game
+			newGame();
+			menuActive = false;
+		}
+		else if (a == 1) {				// instructions
+			instructions();
+		}
+		else if (a == 2) {				// exit
+			exitGame();
+		}
+	}
+}
+//---------------------------------------------------------------------
+void getActive() {				// hämtar aktivt menyval
+	int active;
+	if (pause == true) {		// om man har pausat 
+		if (y < 180) {
+			active = 0;
+		}
+		else if (y < 230) {
+			active = 1;
+		}
+		else if (y < 260) {
+			active = 2;
+		}
+		else {
+			active = 3;
+		}
+	}
+	else {						// I originalmenyn
+		if (y < 180) {
+			active = 0;
+		}
+		else if (y < 230) {
+			active = 1;
+		}
+		else {
+			active = 2;
+		}
+	}
+
+	if (active != a) {			// om man faktiskt har bytt val då ändras valet
+		a = active;
+	}
+}
+//---------------------------------------------------------------------
 void runRight() {
-	/*
-	runL = true;
-	idleL = true;			// ändrar så att run och idle Left blir true, så när spelaren slutar springa så spelas rätt idle animation
-	runR = false;
-	idleR = false;
-	*/
-	player.x +=5;
+	player.x += 10;
 	player.face = 'R';
 }
 //---------------------------------------------------------------------
 void runLeft() {
-	player.x -= 5;
+	player.x -= 10;
 	player.face = 'L';
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 void runUp() {
-	/*
-	runL = true;
-	idleL = true;			// ändrar så att run och idle Left blir true, så när spelaren slutar springa så spelas rätt idle animation
-	runR = false;
-	idleR = false;
-	*/
-	player.y -= 5;
+	player.y -= 10;
 	player.face = 'U';
 }
 //---------------------------------------------------------------------
 void runDown() {
-	player.y += 5;
+	player.y += 10;
 	player.face = 'D';
 }
-//----------------------------------------------------------------------
+//---------------------------------------------------------------------
 void playerAnimation() {
 	if (player.face == 'D') {
 		player.cX = 0;
-		player.cY += 31;
-		if (player.cY > 31) {
-			player.cY = 0;
+		if (player.idle != true) {
+			player.cY += 30;
+			if (player.cY > 30) {
+				player.cY = 0;
+			}
 		}
 	}
 	else if (player.face == 'L') {
-		player.cX = 31;
-		player.cY += 31;
-		if (player.cY > 31) {
-			player.cY = 0;
+		player.cX = 30;
+		if (player.idle != true) {
+			player.cY += 30;
+			if (player.cY > 30) {
+				player.cY = 0;
+			}
 		}
 	}
 	else if (player.face == 'U') {
-		player.cX = 61;
-		player.cY += 31;
-		if (player.cY > 31) {
-			player.cY = 0;
+		player.cX = 60;
+		if (player.idle != true) {
+			player.cY += 30;
+			if (player.cY > 30) {
+				player.cY = 0;
+			}
 		}
 	}
 	else if (player.face == 'R') {
-		player.cX = 91;
-		player.cY += 31;
-		if (player.cY > 31) {
-			player.cY = 0;
+		player.cX = 90;
+		if (player.idle != true) {
+			player.cY += 30;
+			if (player.cY > 30) {
+				player.cY = 0;
+			}
 		}
 	}
 }
-//----------------------------------------------------------------------
+//---------------------------------------------------------------------
 void update() {
 	static int counter = 0;
 	counter++;
-	if (counter % 24 == 0) {
+	if (counter % 12 == 0) {
 		playerAnimation();
 	}
 
 }
 //---------------------------------------------------------------------
+void printMenu() {
+	SetBkMode(bufferHDC, TRANSPARENT);	// så att texten har en transparent backgrund
+	static bool first = true;
+
+	if (first == true) {				// kör endast en gång när man startar spelet
+			// background
+		TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, background.cX, background.cY, background.sizeX, background.sizeY, COLORREF(RGB(255, 0, 255)));
+		first = false;
+	}
+
+	RECT rect;
+	GetClientRect(hWnd, &rect);
+	int antal;												// alla strings för texterna
+	std::string pauseText[4] = { "RESUME", "NEW GAME", "INSTRUCTIONS", "EXIT" };
+	std::string text[3] = { "NEW GAME", "INSTRUCTIONS", "EXIT" };
+	std::string header = "LEGEND OF ZELDA: BREATH OF THE WIN32";
+	std::string menu;
+	if (pause == true) {
+		antal = 4;
+	}
+	else {
+		antal = 3;
+	}
+	SelectObject(bufferHDC, myFonts[1]);					// rubriken
+	SetTextColor(bufferHDC, COLORREF(RGB(245, 66, 197)));
+	TextOut(bufferHDC, 300, 50, header.c_str(), header.size());
+
+	SelectObject(bufferHDC, myFonts[0]);					// menyvalen
+	for (int n = 0; n < antal; n++) {
+		if (pause == true) {
+			menu = pauseText[n];
+		}
+		else {
+			menu = text[n];
+		}
+
+		rect.top = 150 + (n * 40);
+		if (n == a) {										// markerar valet man är över
+			SetTextColor(bufferHDC, COLORREF(RGB(200, 45, 45)));
+		}
+		else {
+			SetTextColor(bufferHDC, COLORREF(RGB(245, 66, 197)));
+		}
+		// skriver ut allt till buffern
+		TextOut(bufferHDC, 50, rect.top, menu.c_str(), menu.size());
+	}
+
+}
+//---------------------------------------------------------------------
+void calculateBorder() {
+	if (player.y < 0) {
+		entrance('U');
+	}
+	else if (player.y > 920) {
+		entrance('D');
+	}
+	else if (player.x > 1800) {
+		entrance('R');
+	}
+	else if (player.x < 0) {
+		entrance('L');
+	}
+}
+//---------------------------------------------------------------------
+void entrance(char dir) {
+											//y = 168 px, x = 256px
+	if (dir == 'U') {
+		background.cY -= 168;
+		player.y = 930;
+	}
+	else if (dir == 'D') {
+		background.cY += 168;
+		player.y = 10;
+	}
+	else if (dir == 'R') {
+		background.cX += 256;
+		player.x = 10;
+	}
+	else if (dir == 'L') {
+		background.cX -= 256;
+		player.x = 1790;
+	}
+}
+//---------------------------------------------------------------------
 void render() {
-
-	//TransparentBLT(hdc till, x utskrift på skrämen, y utskrift på skärmen, hur brett den ska rita ut, hur högt, hdc ifrån, vart från bilden börjar ta x, vart från bilden börja ta y, x antal pixlar att ta, y antalet pixalr att ta, färg att ta bort)
-
-	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, 1792, 1176, background.cX, background.cY, COLORREF(RGB(255, 0, 255)));
-	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
-
-	// dubbelbuffring
-	BitBlt(hDC, 0, 0, innerWidth, innerHeight, bufferHDC, 0, 0, SRCCOPY);
-	
-	/*
 	static bool yes = true;
-	int langd = bgs.size() - 1;
 	if (menuActive == true) {	// om menyn är igång kör endast menyn
 		printMenu();
 		BitBlt(hDC, 0, 0, innerWidth, innerHeight, bufferHDC, 0, 0, SRCCOPY);
 		return;
 	}
-	for (int n = langd; n >= 0; n--) {
-		// background
-		TransparentBlt(bufferHDC, bgs[n].x, 0, app_Wid, app_Hei, bgs[n].hDCbg, 0, 0, bg_Wid, bg_Hei, COLORREF(RGB(255, 0, 255)));
+	//TransparentBLT(hdc till, x utskrift på skrämen, y utskrift på skärmen, hur brett den ska rita ut, hur högt, hdc ifrån, vart från bilden börjar ta x, vart från bilden börja ta y, x antal pixlar att ta, y antalet pixalr att ta, färg att ta bort)
 
-		if (bgs[n].x < 0) {		// rörelse till höger
-			TransparentBlt(bufferHDC, app_Wid + bgs[n].x, 0, -bgs[n].x, app_Hei, bgs[n].hDCbg, 0, 0, -bgs[n].x * 2, bg_Hei, COLORREF(RGB(255, 0, 255)));
-		}
-		else if (bgs[n].x > 0) { // rörelse till vänster
-			TransparentBlt(bufferHDC, bgs[n].x - app_Wid, 0, app_Wid, app_Hei, bgs[n].hDCbg, 0, 0, bg_Wid, bg_Hei, COLORREF(RGB(255, 0, 255)));
-		}
-		if (n == 1) {
-			// player
-			if (idleR == true) {
-				TransparentBlt(bufferHDC, playerX, playerY, 144, 144, playerHDC, xpic, ypic, 144, 144, COLORREF(RGB(255, 0, 255)));
-			}
-			else if (idleL == true) {
-				TransparentBlt(bufferHDC, playerX, playerY, 144, 144, playerHDC, xpic, ypic, 144, 144, COLORREF(RGB(255, 0, 255)));
-			}
-		}
-	}
-	// monster
-	for (int n = 0; n < monstLangd; n++) {
-		TransparentBlt(bufferHDC, monst[n].x, monst[n].y, monst[n].width, monst[n].height, monsterHDC, monst[n].cX, monst[n].cY, 24, 24, COLORREF(RGB(255, 0, 255)));
-	}
-	// explosions
-	for (int n = 0; n < expLangd; n++) {
-		TransparentBlt(bufferHDC, exps[n].x, exps[n].y, exps[n].width, exps[n].height, expHDC, exps[n].cX, exps[n].cY, 320, 240, COLORREF(RGB(255, 0, 255)));
-	}
+	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, background.cX, background.cY, background.sizeX, background.sizeY, COLORREF(RGB(255, 0, 255)));
+	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
 
-	// visar poängen för spelaren
-	std::string output = "Score: " + std::to_string(points) + " ";
-
-	TextOut(bufferHDC, 50, 20, output.c_str(), output.length());
-	*/
-	//dubbelbuff av allt
+	// dubbelbuffring
+	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y);
+	SelectObject(bufferHDC, myFonts[2]);					// rubriken
+	SetTextColor(bufferHDC, COLORREF(RGB(2, 0, 110)));
+	TextOut(bufferHDC, 5, 5, cords.c_str(), cords.size());
+	BitBlt(hDC, 0, 0, innerWidth, innerHeight, bufferHDC, 0, 0, SRCCOPY);
 	
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 int	initalizeAll(HWND hWnd) {
 	srand(time(NULL));
 
@@ -302,10 +455,14 @@ int	initalizeAll(HWND hWnd) {
 	hDC = GetDC(hWnd);			// Koppla f�nstret till en DC
 
 	// skapar fonter
-	myFonts[0] = CreateFontA(28, 0, 100, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Impact"));
-	myFonts[1] = CreateFontA(60, 0, 100, 0, FW_DONTCARE, FALSE, TRUE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Impact"));
+	AddFontResource("The Wild Breath of Zelda.otf");
+	myFonts[0] = CreateFontA(42, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("The Wild Breath of Zelda"));
+	myFonts[1] = CreateFontA(90, 0, 0, 0, FW_DONTCARE, FALSE, TRUE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("The Wild Breath of Zelda"));
+	myFonts[2] = CreateFontA(90, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Arial"));
+
 
 	std::string text = "bilder/linkWorldmap.bmp";
 	background.hdc = CreateCompatibleDC(hDC);
@@ -317,13 +474,6 @@ int	initalizeAll(HWND hWnd) {
 	player.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	oldBitmap[1] = (HBITMAP)SelectObject(player.hdc, player.map);
 
-
-	/*
-	playerHDC = CreateCompatibleDC(hDC);	// Skapa en hdc f�r spelaren
-	text = "bilder/linkSprites.bmp";
-	sprites = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	oldBitmap[8] = (HBITMAP)SelectObject(playerHDC, sprites);
-	*/
 	// Buffer
 	bufferHDC = CreateCompatibleDC(hDC);				// Skapa en hdc f�r bakgrundsbilden
 	bitmapbuff = CreateCompatibleBitmap(hDC, innerWidth, innerHeight);
@@ -333,13 +483,13 @@ int	initalizeAll(HWND hWnd) {
 
 	return 1;
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 void releaseAll(HWND hWnd) {
 	//Ta bort hdc till f�nstret och imageHDC
 	ReleaseDC(hWnd, hDC);
 	DeleteDC(hDC);
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 BOOL initInstance(HINSTANCE hInstance, int nCmdShow) {
 
 	HWND hWnd = CreateWindowEx(
@@ -356,7 +506,7 @@ BOOL initInstance(HINSTANCE hInstance, int nCmdShow) {
 	UpdateWindow(hWnd);
 	return TRUE;
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 ATOM doRegister(HINSTANCE hi) {
 	WNDCLASSEX wincl;
 
@@ -375,10 +525,10 @@ ATOM doRegister(HINSTANCE hi) {
 
 	return RegisterClassEx(&wincl);
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
 double getFreq() {
 	LARGE_INTEGER li;
 	QueryPerformanceFrequency(&li);
 	return double(li.QuadPart) / 1000.0;
 }
-//---------------------------------------------------------------------------
+//---------------------------------------------------------------------
