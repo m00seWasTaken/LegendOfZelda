@@ -3,7 +3,11 @@
 #include <string>
 #include <vector>
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
+#include <iostream>
+
+#pragma warning(disable : 4996):
 // Globla variabler ---------------------------------------------------------
 LPCTSTR		ClsName = "Bgstuff";
 HWND		hWnd;
@@ -13,14 +17,16 @@ int			innerWidth, innerHeight;
 // pic and window
 int			app_Wid = 1920;
 int			app_Hei = 1080;
-int			player_Hei = 90;
-int			player_Wid = 96;
+int			player_Hei = 96;	// player width = 15
+int			player_Wid = 90;	// player Height = 16
 int			bg_Wid = 1920;
 int			bg_Hei = 1080;
 int			x , y;
 // player animation
 int			xpic = 144, ypic = 0;
 int			playerX = app_Wid / 2 - 72, playerY = 275;
+// player attack
+bool swordItem = true; /*jiofrojifWJOÖJÖGFElna<iugfhliWERNGLIUENRGLwngriuonbfliu.nrgbioönbA<BRIOUÖNrg*/
 // menu
 bool		menuActive = true;
 bool		pause = false;
@@ -47,6 +53,7 @@ struct user {
 	int sizeY = 16;
 	char face = 'D';
 	bool idle = true;
+	bool attack = false;
 };
 // All mighty
 BG			background;
@@ -79,6 +86,14 @@ void        getActive();			// hämtar aktivt menyval
 // game progression
 void		entrance(char);			// flytta bakgrunden
 void		calculateBorder();		// räkna ut om man borde flyta backgrund
+// kill kill kill
+void		attackSword();
+void		swordAni();
+
+// tmp
+void		dispMap();
+void		createMap();
+
 // Funktioner för windows ---------------------------------------------------
 LRESULT		CALLBACK	winProc(HWND, UINT, WPARAM, LPARAM);
 ATOM 		doRegister(HINSTANCE);
@@ -164,6 +179,11 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		else if (wParam == VK_DOWN) {		// rör spelaren till höger
 			runDown();
 		}
+		else if (wParam == VK_SPACE && swordItem == true && player.attack == false) {		// rör spelaren till höger
+			player.cY = 59;
+			player.attack = true;
+			attackSword();
+		}
 		else if (wParam == VK_ESCAPE && menuActive == false) {		// öppnar menyn när man trycker på ESC
 			menuActive = true;
 			pause = true;
@@ -180,6 +200,34 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		return DefWindowProc(hWnd, Msg, wParam, lParam);
 	}
 	return 0;
+}
+//---------------------------------------------------------------------
+void attackSword() {
+	/* DO SOME ATTACK*/
+	std::cout << "Attack" << std::endl;
+}
+//----------------------------TMTPMTMPT-----------------------------------------
+void dispMap() {
+	system("CLS");
+	for (int n = 0; n < 92; n++) {			// rows 
+		for (int i = 0; i < 180; i++) {		// colums
+			if (i != 179) {
+				std::cout << map[i][n];
+			}
+			else {
+				std::cout << '1';
+			}
+			
+		}
+		std::cout << std::endl;
+	}
+}
+void createMap() {
+	for (int n = 0; n < 92; n++) {			// rows 
+		for (int i = 0; i < 180; i++) {		// colums
+			map[i][n] = '0';
+		}
+	}
 }
 //---------------------------------------------------------------------
 void exitGame() {				// stänger ner spelet 
@@ -329,13 +377,103 @@ void playerAnimation() {
 	}
 }
 //---------------------------------------------------------------------
+void swordAnimation() {
+	if (player.face == 'D') {
+		player.sizeX = 16;
+		player.sizeY = 28;
+		player_Hei = 160;
+		player.cX = 0;
+		player.cY += 25;
+		if (player.cY > 85) {
+			attackSword();
+			player.sizeY = 17;
+			player.cY = 59;
+			player_Hei = 96;
+			player.attack = false;
+		}
+		if (player.attack == false) {
+			player.cY = 0;
+			playerAnimation();
+		}
+	}
+	else if (player.face == 'L') {
+		player.sizeX = 28;
+		player.sizeY = 17;
+		player_Wid = 160;
+		player.cX = 23;
+		player.cY += 29;
+		player.x -= 72;
+		if (player.cY > 90) {
+			attackSword();
+			player.x += 72;
+			player.sizeX = 15;
+			player.sizeY = 16;
+			player.cY = 59;
+			player_Wid = 90;
+			player.attack = false;
+		}
+		if (player.attack == false) {
+			player.x += 72;
+			player.cY = 0;
+			playerAnimation();
+		}
+	}
+	else if (player.face == 'U') {
+		player.sizeX = 16;
+		player.sizeY = 28;
+		player_Hei = 160;
+		player.cX = 60;
+		player.cY += 25;
+		player.y -= 60;
+		if (player.cY > 85) {
+			attackSword();
+			player.y += 60;
+			player.sizeY = 17;
+			player.cY = 59;
+			player_Hei = 96;
+			player.attack = false;
+		}
+		if (player.attack == false) {
+			player.y += 60;
+			player.cY = 0;
+			playerAnimation();
+		}
+	}
+	else if (player.face == 'R') {
+		player.sizeX = 28;
+		player.sizeY = 17;
+		player_Wid = 160;
+		player.cX = 84;
+		player.cY += 29;
+		if (player.cY > 90) {
+			attackSword();
+			player.sizeX = 15;
+			player.sizeY = 16;
+			player.cY = 59;
+			player_Wid = 90;
+			player.attack = false;
+		}
+		if (player.attack == false) {
+			player.cY = 0;
+			playerAnimation();
+		}
+	}
+}
+//---------------------------------------------------------------------
 void update() {
 	static int counter = 0;
 	counter++;
 	if (counter % 12 == 0) {
-		playerAnimation();
+		if (player.attack == true) {
+			swordAnimation();
+		}
+		else {
+			playerAnimation();
+		}
 	}
-
+	if (counter % 1000 == 0) {
+		dispMap();
+	}
 }
 //---------------------------------------------------------------------
 void printMenu() {
@@ -481,8 +619,16 @@ int	initalizeAll(HWND hWnd) {
 	//Ger CPU-frekvensen som anv�nds med performanceCounter();
 	CPUFreq = getFreq();
 
+	// tmp
+	AllocConsole();
+	freopen("CONOUT$", "w", stdout);
+	std::cout << "This works" << std::endl;
+	createMap();
+
 	return 1;
 }
+//---------------------------------------------------------------------
+
 //---------------------------------------------------------------------
 void releaseAll(HWND hWnd) {
 	//Ta bort hdc till f�nstret och imageHDC

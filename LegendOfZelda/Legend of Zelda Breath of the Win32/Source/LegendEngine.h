@@ -3,7 +3,7 @@ class LegendEngine
 {
 	public:
 		void	bombs();
-		void	sword();
+		void	swordItem();
 		void	spinattack();
 		void	bow();
 		void	arrows();

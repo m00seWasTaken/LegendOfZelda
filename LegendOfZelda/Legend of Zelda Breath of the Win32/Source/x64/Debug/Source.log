@@ -1,8 +1,9 @@
 ﻿  Source.cpp
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(102,28): warning C4566: character represented by universal-character-name '\uFFFD' cannot be represented in the current code page (1252)
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(204,67): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(365,59): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(384,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(440,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(446,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(10,32): warning C4081: expected 'newline'; found ':'
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(118,28): warning C4566: character represented by universal-character-name '\uFFFD' cannot be represented in the current code page (1252)
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(253,67): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(504,59): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(523,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(579,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(585,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
   Source.vcxproj -> C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\x64\Debug\Source.exe
