@@ -17,8 +17,8 @@ int			innerWidth, innerHeight;
 // pic and window
 int			app_Wid = 1920;
 int			app_Hei = 1080;
-int			player_Hei = 96;	// player width = 15
-int			player_Wid = 90;	// player Height = 16
+int			player_Hei = 96;	// player width = 15 = 10 rutor hög
+int			player_Wid = 90;	// player Height = 16 = 9 rutor bredd
 int			bg_Wid = 1920;
 int			bg_Hei = 1080;
 int			x , y;
@@ -47,6 +47,8 @@ struct user {
 	HBITMAP map;
 	int x = 1920 / 2;
 	int y = 1080 / 2;
+	int posX = 1920 / 10;
+	int posY = 1080 / 10;
 	int cX = 0;					// en lin gå: y=16 px, x=15px
 	int cY = 0;
 	int sizeX = 15;
@@ -54,11 +56,14 @@ struct user {
 	char face = 'D';
 	bool idle = true;
 	bool attack = false;
+	int moners;
+	int hp = 5;
 };
 // All mighty
 BG			background;
 user		player;
-char		map[180][92];
+char		map[192][100];
+char		hittmp;
 // fonter
 HFONT		myFonts[3];
 // Device Contexts ----------------------------------------------------------
@@ -76,6 +81,7 @@ void		runLeft();				// spelaren springer vänster
 void		runUp();				// spelaren springer uppåt
 void		runDown();				// spelaren springer neråt
 void		playerAnimation();		// animation för spelaren
+void		swordAni();
 // menu
 void        newGame();				// startar spel från menyn
 void		instructions();			// instruktioner för spelet
@@ -86,6 +92,9 @@ void        getActive();			// hämtar aktivt menyval
 // game progression
 void		entrance(char);			// flytta bakgrunden
 void		calculateBorder();		// räkna ut om man borde flyta backgrund
+void		playerPos();
+char		collision();
+void		createBox(int, int, int, int);
 // kill kill kill
 void		attackSword();
 void		swordAni();
@@ -144,7 +153,7 @@ bool framerate(int timeStamp) {
 }
 //---------------------------------------------------------------------
 LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
-
+	char hit; 
 	switch (Msg) {
 	case WM_CREATE:
 		initalizeAll(hWnd);
@@ -154,6 +163,7 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 			choice();
 			break;
 		}
+		dispMap();
 		break;
 	case WM_MOUSEMOVE:
 		if (menuActive == true) {			// om man är i menyn tracka musen
@@ -167,16 +177,18 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		break;
 	case WM_KEYDOWN:
 		player.idle = false;
-		if (wParam == VK_RIGHT) {			// rör spelaren till vänster
+		hittmp = collision();
+		playerPos();
+		if (wParam == VK_RIGHT && hittmp != 'R') {			// rör spelaren till vänster
 			runRight();
 		}
-		else if (wParam == VK_LEFT) {		// rör spelaren till höger
+		else if (wParam == VK_LEFT && hittmp != 'L') {		// rör spelaren till höger
 			runLeft();
 		}
-		else if (wParam == VK_UP) {			// rör spelaren till höger
+		else if (wParam == VK_UP && hittmp != 'U') {			// rör spelaren till höger
 			runUp();
 		}
-		else if (wParam == VK_DOWN) {		// rör spelaren till höger
+		else if (wParam == VK_DOWN && hittmp != 'D') {		// rör spelaren till höger
 			runDown();
 		}
 		else if (wParam == VK_SPACE && swordItem == true && player.attack == false) {		// rör spelaren till höger
@@ -209,23 +221,27 @@ void attackSword() {
 //----------------------------TMTPMTMPT-----------------------------------------
 void dispMap() {
 	system("CLS");
-	for (int n = 0; n < 92; n++) {			// rows 
-		for (int i = 0; i < 180; i++) {		// colums
-			if (i != 179) {
+	for (int n = 0; n < 100; n++) {			// rows 
+		for (int i = 0; i < 192; i++) {		// colums
+			if (i != 181) {
 				std::cout << map[i][n];
 			}
-			else {
-				std::cout << '1';
-			}
-			
 		}
 		std::cout << std::endl;
 	}
 }
 void createMap() {
-	for (int n = 0; n < 92; n++) {			// rows 
-		for (int i = 0; i < 180; i++) {		// colums
+	for (int n = 0; n < 100; n++) {			// rows 
+		for (int i = 0; i < 192; i++) {		// colums
 			map[i][n] = '0';
+		}
+	}
+}
+//---------------------------------------------------------------------
+void createBox(int xBox, int yBox, int sizeX, int sizeY) {
+	for (int n = 0; n < sizeY; n++) {		// rows
+		for (int i = 0; i < sizeX; i++) {	// colums
+			map[xBox + i][yBox + n] = '1';
 		}
 	}
 }
@@ -238,6 +254,7 @@ void exitGame() {				// stänger ner spelet
 void newGame() {				// startar spel från menyn
 	player.x = 1920 / 2;
 	player.y = 1080 / 2;
+	playerPos();
 	player.face = 'D';
 	background.cX = 1792;    
 	background.cY = 1176;
@@ -336,6 +353,73 @@ void runUp() {
 void runDown() {
 	player.y += 10;
 	player.face = 'D';
+}
+//---------------------------------------------------------------------
+void playerPos() {
+	
+	// tmp tills en annan lösning, måste ha så den bara tar tillbaka det man har gått på och inte hela banan
+	/*
+	for (int n = 0; n < 100; n++) {			// rows 
+		for (int i = 0; i < 192; i++) {		// colums
+			map[i][n] = '0';
+		}
+	}
+	*/
+
+	player.posX = player.x / 10;	
+	player.posY = player.y / 10;	
+	for (int n = 0; n < 10; n++) {
+		for (int i = 0; i < 9; i++) {
+			map[player.posX + i][player.posY + n] = 'C';
+		}
+	}
+
+	if (player.face == 'U') {
+		for (int n = 0; n < 9; n++) {
+			map[player.posX + n][player.posY + 10] = '0';
+		}
+	}
+	else if (player.face == 'D') {
+		for (int n = 0; n < 9; n++) {
+			map[player.posX + n][player.posY - 1] = '0';
+		}
+	}
+	else if (player.face == 'R') {
+		for (int n = 0; n < 10; n++) {
+			map[player.posX - 1][player.posY + n] = '0';
+		}
+	}
+	else if (player.face == 'L') {
+		for (int n = 0; n < 10; n++) {
+			map[player.posX + 9][player.posY + n] = '0';
+		}
+	}
+
+	//dispMap();
+}
+//---------------------------------------------------------------------
+char collision() {
+	char hit = '0';
+
+	for (int n = 0; n < 10; n++) {
+		if (map[player.posX + 10][player.posY + n] == '1') {
+			hit = 'R';
+		}
+		if (map[player.posX - 2][player.posY + n] == '1') {
+			hit = 'L';
+		}
+	}
+	for (int n = 0; n < 9; n++) {
+		if (map[player.posX + n][player.posY - 2] == '1') {
+			hit = 'U';
+		}
+		if (map[player.posX + n][player.posY + 11] == '1') {
+			hit = 'D';
+		}
+	}
+
+	std::cout << hit;
+	return hit;
 }
 //---------------------------------------------------------------------
 void playerAnimation() {
@@ -471,8 +555,8 @@ void update() {
 			playerAnimation();
 		}
 	}
-	if (counter % 1000 == 0) {
-		dispMap();
+	if (counter % 500 == 0) {
+	//	dispMap();
 	}
 }
 //---------------------------------------------------------------------
@@ -573,7 +657,8 @@ void render() {
 	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
 
 	// dubbelbuffring
-	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y);
+	std::string nextHit(1, hittmp);
+	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit;
 	SelectObject(bufferHDC, myFonts[2]);					// rubriken
 	SetTextColor(bufferHDC, COLORREF(RGB(2, 0, 110)));
 	TextOut(bufferHDC, 5, 5, cords.c_str(), cords.size());
@@ -624,7 +709,13 @@ int	initalizeAll(HWND hWnd) {
 	freopen("CONOUT$", "w", stdout);
 	std::cout << "This works" << std::endl;
 	createMap();
-
+	// upper hill
+	createBox(108, 0, 84, 51);
+	//down hill
+	createBox(0, 92, 192, 8);
+	createBox(0, 63, 24, 37);
+	
+	
 	return 1;
 }
 //---------------------------------------------------------------------
