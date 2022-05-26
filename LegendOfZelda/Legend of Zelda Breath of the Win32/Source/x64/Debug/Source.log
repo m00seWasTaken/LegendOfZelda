@@ -1,10 +1,10 @@
 ﻿  Source.cpp
 C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(11,32): warning C4081: expected 'newline'; found ':'
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(133,28): warning C4566: character represented by universal-character-name '\uFFFD' cannot be represented in the current code page (1252)
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(162,7): warning C4101: 'hit': unreferenced local variable
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(330,67): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(667,59): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(686,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(767,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(773,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(144,28): warning C4566: character represented by universal-character-name '\uFFFD' cannot be represented in the current code page (1252)
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(173,7): warning C4101: 'hit': unreferenced local variable
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(341,67): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(678,59): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(697,61): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(783,54): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\Source\Source.cpp(789,12): warning C4244: 'argument': conversion from 'time_t' to 'unsigned int', possible loss of data
   Source.vcxproj -> C:\Users\Elliot Karlsson\Desktop\Gitkraken Repos\LegendOfZelda\LegendOfZelda\Legend of Zelda Breath of the Win32\x64\Debug\Source.exe

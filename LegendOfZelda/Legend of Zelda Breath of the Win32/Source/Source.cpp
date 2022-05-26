@@ -37,8 +37,6 @@ int			a = 0;
 struct BG {
 	HDC hdc;
 	HBITMAP map;
-	int x;
-	int y;
 	int cX = 1792;					// ETT RUM:	y=168 px, x=256px
 	int cY = 1176;
 	int sizeX = 256;
@@ -73,6 +71,7 @@ struct monster {
 };
 // All mighty
 BG					 background;
+BG					 startScreen;
 user				 player;
 char				 map[192][100];
 char				 hittmp[4];
@@ -86,7 +85,7 @@ HDC			backgroundHDC;			// DC till background
 HDC			bufferHDC;				// hdc till buffer
 // BITMAPS ------------------------------------------------------------------
 HBITMAP		playerMap;				// all the sprites
-HBITMAP		oldBitmap[2];			// Lagrar orginalbilderna
+HBITMAP		oldBitmap[3];			// Lagrar orginalbilderna
 HBITMAP		bitmapbuff;				// lagrar bilden till bitmapen
 // Funktioner ---------------------------------------------------------------
 void		moveLink(char);
@@ -657,7 +656,7 @@ void printMenu() {
 
 	if (first == true) {				// kör endast en gång när man startar spelet
 			// background
-		TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, background.cX, background.cY, background.sizeX, background.sizeY, COLORREF(RGB(255, 0, 255)));
+		TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, startScreen.hdc, startScreen.cX, startScreen.cY, startScreen.sizeX, startScreen.sizeY, COLORREF(RGB(255, 0, 255)));
 		first = false;
 	}
 
@@ -816,6 +815,17 @@ int	initalizeAll(HWND hWnd) {
 	player.hdc = CreateCompatibleDC(hDC);
 	player.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	oldBitmap[1] = (HBITMAP)SelectObject(player.hdc, player.map);
+
+	text = "bilder/linkScreen.bmp";
+	startScreen.hdc = CreateCompatibleDC(hDC);
+	startScreen.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[2] = (HBITMAP)SelectObject(startScreen.hdc, startScreen.map);
+
+	startScreen.cX = 0;
+	startScreen.cY = 0;
+	startScreen.sizeX = 1331;
+	startScreen.sizeY = 752;
+
 
 	// Buffer
 	bufferHDC = CreateCompatibleDC(hDC);				// Skapa en hdc f�r bakgrundsbilden
