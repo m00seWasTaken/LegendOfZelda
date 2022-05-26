@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <iostream>
+//#include "LegendEngine.h"
 
 #pragma warning(disable : 4996):
 // Globla variabler ---------------------------------------------------------
@@ -31,6 +32,7 @@ bool swordItem = true; /*jiofrojifWJOÖJÖGFElna<iugfhliWERNGLIUENRGLwngriuonbfl
 bool		menuActive = true;
 bool		pause = false;
 int			a = 0;
+
 // struct
 struct BG {
 	HDC hdc;
@@ -59,29 +61,41 @@ struct user {
 	int moners;
 	int hp = 5;
 };
+struct monster {
+	HDC hdc;
+	HBITMAP map;
+	int x;
+	int y; 
+	int cX = 0;					// en lin gå: y=16 px, x=15px
+	int cY = 0;
+	int sizeX = 15;
+	int sizeY = 16;
+};
 // All mighty
-BG			background;
-user		player;
-char		map[192][100];
-char		hittmp;
+BG					 background;
+user				 player;
+char				 map[192][100];
+char				 hittmp[4];
+std::vector<monster> enemie;
 // fonter
 HFONT		myFonts[3];
 // Device Contexts ----------------------------------------------------------
 HDC			hDC;					// V�r huvudsakliga DC - Till f�nstret
-HDC			spritesHDC;				// DC till player
+HDC			playerHdc;				// DC till player
 HDC			backgroundHDC;			// DC till background
 HDC			bufferHDC;				// hdc till buffer
 // BITMAPS ------------------------------------------------------------------
-HBITMAP		sprites;				// all the sprites
+HBITMAP		playerMap;				// all the sprites
 HBITMAP		oldBitmap[2];			// Lagrar orginalbilderna
 HBITMAP		bitmapbuff;				// lagrar bilden till bitmapen
 // Funktioner ---------------------------------------------------------------
+void		moveLink(char);
 void		runRight();				// spelaren springer höger
 void		runLeft();				// spelaren springer vänster
 void		runUp();				// spelaren springer uppåt
 void		runDown();				// spelaren springer neråt
 void		playerAnimation();		// animation för spelaren
-void		swordAni();
+void		swordAnimation();
 // menu
 void        newGame();				// startar spel från menyn
 void		instructions();			// instruktioner för spelet
@@ -91,17 +105,21 @@ void		choice();				// vad för aval man väljer i menyn
 void        getActive();			// hämtar aktivt menyval
 // game progression
 void		entrance(char);			// flytta bakgrunden
+void		setChar(bool);
 void		calculateBorder();		// räkna ut om man borde flyta backgrund
 void		playerPos();
-char		collision();
+void		collision();
 void		createBox(int, int, int, int);
 // kill kill kill
 void		attackSword();
-void		swordAni();
 
 // tmp
 void		dispMap();
 void		createMap();
+
+
+//LegendEngine Zelda;
+char		 keyPressed;
 
 // Funktioner för windows ---------------------------------------------------
 LRESULT		CALLBACK	winProc(HWND, UINT, WPARAM, LPARAM);
@@ -153,7 +171,7 @@ bool framerate(int timeStamp) {
 }
 //---------------------------------------------------------------------
 LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
-	char hit; 
+	char hit[4]; 
 	switch (Msg) {
 	case WM_CREATE:
 		initalizeAll(hWnd);
@@ -176,19 +194,44 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		running = false;
 		break;
 	case WM_KEYDOWN:
+		//Zelda.setIdle(false);
 		player.idle = false;
-		hittmp = collision();
-		playerPos();
-		if (wParam == VK_RIGHT && hittmp != 'R') {			// rör spelaren till vänster
+		if (wParam == VK_RIGHT or wParam == 0x44) {			// D
+			keyPressed = 'R';
+		}
+		else if (wParam == VK_LEFT or wParam == 0x41) {		// A
+			keyPressed = 'L';
+		}
+		else if (wParam == VK_UP or wParam == 0x57) {		// W
+			keyPressed = 'U';
+		}
+		else if (wParam == VK_DOWN or wParam == 0x53) {		// S
+			keyPressed = 'D';
+		}
+		else if (wParam == VK_SPACE && swordItem == true && player.attack == false) {						// SPACE
+			keyPressed = 'S';
+		}
+		else if (wParam == VK_ESCAPE && menuActive == false) {
+			keyPressed = 'E';
+		}
+		moveLink(keyPressed);
+	
+		/*
+		for (int n = 0; n < 5; n++) {
+			Zelda.setInput(n, keyPressed[n]);
+		}
+		*/
+		/*		
+		if (wParam == VK_RIGHT && hittmp[0] != 'R') {			// rör spelaren till vänster
 			runRight();
 		}
-		else if (wParam == VK_LEFT && hittmp != 'L') {		// rör spelaren till höger
+		else if (wParam == VK_LEFT && hittmp[1] != 'L') {		// rör spelaren till höger
 			runLeft();
 		}
-		else if (wParam == VK_UP && hittmp != 'U') {			// rör spelaren till höger
+		else if (wParam == VK_UP && hittmp[2] != 'U') {			// rör spelaren till höger
 			runUp();
 		}
-		else if (wParam == VK_DOWN && hittmp != 'D') {		// rör spelaren till höger
+		else if (wParam == VK_DOWN && hittmp[3] != 'D') {		// rör spelaren till höger
 			runDown();
 		}
 		else if (wParam == VK_SPACE && swordItem == true && player.attack == false) {		// rör spelaren till höger
@@ -200,10 +243,39 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 			menuActive = true;
 			pause = true;
 		}
+		playerPos();
+		collision();
 		calculateBorder();
+		*/
+
 		break;
-	case WM_KEYUP:							
+	case WM_KEYUP:		
+		//Zelda.setIdle(true);
 		player.idle = true;
+		keyPressed = '0';
+		/*
+		if (wParam == VK_RIGHT or wParam == 0x44) {			// D
+			keyPressed = '0';
+		}
+		else if (wParam == VK_LEFT or wParam == 0x41) {		// A
+			keyPressed = '0';
+		}
+		else if (wParam == VK_UP or wParam == 0x57) {		// W
+			keyPressed = '0';
+		}
+		else if (wParam == VK_DOWN or wParam == 0x53) {		// S
+			keyPressed = '0';
+		}
+		else if (wParam == VK_SPACE) {						// SPACE
+			keyPressed = '0';
+		}
+		*/
+		/*
+		for (int n = 0; n < 5; n++) {
+			Zelda.setInput(n, keyPressed[n]);
+		}
+		*/
+
 		break;
 	case WM_DESTROY:
 		releaseAll(hWnd);
@@ -335,6 +407,33 @@ void getActive() {				// hämtar aktivt menyval
 	}
 }
 //---------------------------------------------------------------------
+void moveLink(char dir) {
+	if (dir == 'R' && hittmp[0] != 'R') {
+		runRight();
+	}
+	else if (dir == 'L' && hittmp[1] != 'L') {
+		runLeft();
+	}
+	else if (dir == 'U' && hittmp[2] != 'U') {
+		runUp();
+	}
+	else if (dir == 'D' && hittmp[3] != 'D') {
+		runDown();
+	}
+	else if (dir == 'S' && swordItem == true && player.attack == false) {
+		player.cY = 59;
+		player.attack = true;
+		attackSword();
+	}
+	else if (dir == 'E' && menuActive == false) {
+		menuActive = true;
+		pause = true;
+	}
+	playerPos();
+	collision();
+	calculateBorder();
+}
+//---------------------------------------------------------------------
 void runRight() {
 	player.x += 10;
 	player.face = 'R';
@@ -357,15 +456,6 @@ void runDown() {
 //---------------------------------------------------------------------
 void playerPos() {
 	
-	// tmp tills en annan lösning, måste ha så den bara tar tillbaka det man har gått på och inte hela banan
-	/*
-	for (int n = 0; n < 100; n++) {			// rows 
-		for (int i = 0; i < 192; i++) {		// colums
-			map[i][n] = '0';
-		}
-	}
-	*/
-
 	player.posX = player.x / 10;	
 	player.posY = player.y / 10;	
 	for (int n = 0; n < 10; n++) {
@@ -398,31 +488,32 @@ void playerPos() {
 	//dispMap();
 }
 //---------------------------------------------------------------------
-char collision() {
-	char hit = '0';
+void collision() {
+	for (int n = 0; n < 4; n++) {
+		hittmp[n] = '0';
+	}
 
 	for (int n = 0; n < 10; n++) {
-		if (map[player.posX + 10][player.posY + n] == '1') {
-			hit = 'R';
+		if (map[player.posX + 9][player.posY + n] == '1') {
+			hittmp[0] = 'R';
 		}
-		if (map[player.posX - 2][player.posY + n] == '1') {
-			hit = 'L';
+		if (map[player.posX - 1][player.posY + n] == '1') {
+			hittmp[1] = 'L';
 		}
 	}
 	for (int n = 0; n < 9; n++) {
-		if (map[player.posX + n][player.posY - 2] == '1') {
-			hit = 'U';
+		if (map[player.posX + n][player.posY - 1] == '1') {
+			hittmp[2] = 'U';
 		}
-		if (map[player.posX + n][player.posY + 11] == '1') {
-			hit = 'D';
+		if (map[player.posX + n][player.posY + 10] == '1') {
+			hittmp[3] = 'D';
 		}
 	}
-
-	std::cout << hit;
-	return hit;
 }
 //---------------------------------------------------------------------
 void playerAnimation() {
+	player.sizeX = 15;
+	player.sizeY = 16;
 	if (player.face == 'D') {
 		player.cX = 0;
 		if (player.idle != true) {
@@ -610,7 +701,7 @@ void printMenu() {
 }
 //---------------------------------------------------------------------
 void calculateBorder() {
-	if (player.y < 0) {
+	if (player.y <= 0) {
 		entrance('U');
 	}
 	else if (player.y > 920) {
@@ -625,7 +716,7 @@ void calculateBorder() {
 }
 //---------------------------------------------------------------------
 void entrance(char dir) {
-											//y = 168 px, x = 256px
+	setChar(false);    //y = 168 px, x = 256px
 	if (dir == 'U') {
 		background.cY -= 168;
 		player.y = 930;
@@ -642,6 +733,24 @@ void entrance(char dir) {
 		background.cX -= 256;
 		player.x = 1790;
 	}
+	setChar(true);
+}
+//---------------------------------------------------------------------
+void setChar(bool state) {
+	char make;
+	if (state == true) {
+		make = 'C';
+	}
+	else {
+		make = '0';
+	}
+	player.posX = player.x / 10;
+	player.posY = player.y / 10;
+	for (int n = 0; n < 10; n++) {
+		for (int i = 0; i < 9; i++) {
+			map[player.posX + i][player.posY + n] = make;
+		}
+	}
 }
 //---------------------------------------------------------------------
 void render() {
@@ -655,10 +764,21 @@ void render() {
 
 	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, background.cX, background.cY, background.sizeX, background.sizeY, COLORREF(RGB(255, 0, 255)));
 	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
-
+	
+	// enemies 
+	/*
+	int langd = enemie.size();
+	for (int n = 0; n < langd; n++) {
+		TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
+	}
+	*/
 	// dubbelbuffring
-	std::string nextHit(1, hittmp);
-	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit;
+	std::string nextHit;
+	for (int n = 0; n < 4; n++) {
+		nextHit.push_back(hittmp[n]);
+	}
+
+	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit + ", " + std::to_string(player.sizeX) + ", " + std::to_string(player.sizeY) + ", " + std::to_string(player.cX) + ", " + std::to_string(player.cY);
 	SelectObject(bufferHDC, myFonts[2]);					// rubriken
 	SetTextColor(bufferHDC, COLORREF(RGB(2, 0, 110)));
 	TextOut(bufferHDC, 5, 5, cords.c_str(), cords.size());
@@ -707,19 +827,38 @@ int	initalizeAll(HWND hWnd) {
 	// tmp
 	AllocConsole();
 	freopen("CONOUT$", "w", stdout);
-	std::cout << "This works" << std::endl;
 	createMap();
 	// upper hill
 	createBox(108, 0, 84, 51);
 	//down hill
-	createBox(0, 92, 192, 8);
+	createBox(0, 91, 192, 8);
 	createBox(0, 63, 24, 37);
 	
 	
 	return 1;
 }
 //---------------------------------------------------------------------
+void monsterAi() {
 
+}
+void monsterWalk() {
+
+}
+void monsterAttack() {
+
+}
+void save() {
+
+}
+void load() {
+
+}
+void highscore() {
+
+}
+void diff() {
+
+}
 //---------------------------------------------------------------------
 void releaseAll(HWND hWnd) {
 	//Ta bort hdc till f�nstret och imageHDC
