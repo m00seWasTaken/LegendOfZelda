@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <iostream>
+#include <fstream>
 //#include "LegendEngine.h"
 
 #pragma warning(disable : 4996):
@@ -23,11 +24,8 @@ int			player_Wid = 90;	// player Height = 16 = 9 rutor bredd
 int			bg_Wid = 1920;
 int			bg_Hei = 1080;
 int			x , y;
-// player animation
-int			xpic = 144, ypic = 0;
-int			playerX = app_Wid / 2 - 72, playerY = 275;
 // player attack
-bool swordItem = true; /*jiofrojifWJOÖJÖGFElna<iugfhliWERNGLIUENRGLwngriuonbfliu.nrgbioönbA<BRIOUÖNrg*/
+bool		swordItem = true;
 // menu
 bool		menuActive = true;
 bool		pause = false;
@@ -35,57 +33,63 @@ int			a = 0;
 
 // struct
 struct BG {
-	HDC hdc;
+	HDC		hdc;
 	HBITMAP map;
-	int cX = 1792;					// ETT RUM:	y=168 px, x=256px
-	int cY = 1176;
-	int sizeX = 256;
-	int sizeY = 168;
+	int		cX = 1792;					// ETT RUM:	y=168 px, x=256px
+	int		cY = 1176;
+	int		sizeX = 256;
+	int		sizeY = 168;
 };
 struct user {
-	HDC hdc;
+	HDC		hdc;
 	HBITMAP map;
-	int x = 1920 / 2;
-	int y = 1080 / 2;
-	int posX = 1920 / 10;
-	int posY = 1080 / 10;
-	int cX = 0;					// en lin gå: y=16 px, x=15px
-	int cY = 0;
-	int sizeX = 15;
-	int sizeY = 16;
-	char face = 'D';
-	bool idle = true;
-	bool attack = false;
-	int moners;
-	int hp = 5;
+	int		x = 1920 / 2;
+	int		y = 1080 / 2;
+	int		posX = 1920 / 10;
+	int		posY = 1080 / 10;
+	int		cX = 0;					// en lin gå: y=16 px, x=15px
+	int		cY = 0;
+	int		sizeX = 15;
+	int		sizeY = 16;
+	char	face = 'U';
+	bool	idle = true;
+	bool	attack = false;
+	int		moners;
+	int		hp = 5;
+	int		level = 0;
 };
 struct monster {
-	HDC hdc;
-	HBITMAP map;
-	int x;
-	int y; 
-	int cX = 0;					// en lin gå: y=16 px, x=15px
-	int cY = 0;
-	int sizeX = 15;
-	int sizeY = 16;
+	int		x = 800;
+	int		y = 500; 
+	int		posX = 800/10;
+	int		posY = 500/10;
+	int		cX = 0;					// en lin gå: y=16 px, x=15px
+	int		cY = 0;
+	int		sizeX = 16;
+	int		sizeY = 15;
+	int		Hei = 90;
+	int		Wid = 96;
+	char	face = 'R';
+	int		hp = 5;
 };
-// All mighty
-BG					 background;
-BG					 startScreen;
+// All might
+BG					 background, startScreen;
 user				 player;
-char				 map[192][100];
-char				 hittmp[4];
+bool				 move = true;
+char				 map[6][192][100];
+char				 hittmp[5];
+char		         keyPressed;
 std::vector<monster> enemie;
 // fonter
 HFONT		myFonts[3];
 // Device Contexts ----------------------------------------------------------
 HDC			hDC;					// V�r huvudsakliga DC - Till f�nstret
-HDC			playerHdc;				// DC till player
+HDC			enemieHdc;				// DC till player
 HDC			backgroundHDC;			// DC till background
 HDC			bufferHDC;				// hdc till buffer
 // BITMAPS ------------------------------------------------------------------
-HBITMAP		playerMap;				// all the sprites
-HBITMAP		oldBitmap[3];			// Lagrar orginalbilderna
+HBITMAP		enemieMap;				// all the sprites
+HBITMAP		oldBitmap[4];			// Lagrar orginalbilderna
 HBITMAP		bitmapbuff;				// lagrar bilden till bitmapen
 // Funktioner ---------------------------------------------------------------
 void		moveLink(char);
@@ -105,20 +109,23 @@ void        getActive();			// hämtar aktivt menyval
 // game progression
 void		entrance(char);			// flytta bakgrunden
 void		setChar(bool);
+void		showCave();
 void		calculateBorder();		// räkna ut om man borde flyta backgrund
 void		playerPos();
 void		collision();
-void		createBox(int, int, int, int);
+void		createBox(int, int, int, int, int, char);
 // kill kill kill
 void		attackSword();
-
+void		killEnemie(); 
+void		monsterWalk();
+int			wichEnemie();
+void		enemyPos(int);
 // tmp
 void		dispMap();
 void		createMap();
 
-
 //LegendEngine Zelda;
-char		 keyPressed;
+
 
 // Funktioner för windows ---------------------------------------------------
 LRESULT		CALLBACK	winProc(HWND, UINT, WPARAM, LPARAM);
@@ -209,11 +216,13 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 		}
 		else if (wParam == VK_SPACE && swordItem == true && player.attack == false) {						// SPACE
 			keyPressed = 'S';
+
 		}
 		else if (wParam == VK_ESCAPE && menuActive == false) {
 			keyPressed = 'E';
 		}
-		moveLink(keyPressed);
+
+		if(move == true)moveLink(keyPressed);
 	
 		/*
 		for (int n = 0; n < 5; n++) {
@@ -286,7 +295,40 @@ LRESULT CALLBACK winProc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam) {
 }
 //---------------------------------------------------------------------
 void attackSword() {
-	/* DO SOME ATTACK*/
+	bool hit[4] = { false, false, false, false };
+	int id;
+	for(int i = 0; i < 3; i++){
+		for (int n = 0; n < 5; n++) {
+			if (player.face == 'U' && hit[0] != true) {
+				if (map[player.level][player.posX + 3 + i][player.posY - 1 - n] == 'E') {
+					id = wichEnemie();
+					killEnemie();
+					hit[0] = true;
+				}
+			}
+			else if (player.face == 'D' && hit[1] != true) {
+				if (map[player.level][player.posX + 3 + i][player.posY + 10 + n] == 'E') {
+					id = wichEnemie();
+					killEnemie();
+					hit[1] = true;
+				}
+			}
+			else if (player.face == 'L' && hit[2] != true) {
+				if (map[player.level][player.posX - 1 - n][player.posY + 4 + i] == 'E') {
+					id = wichEnemie();
+					killEnemie();
+					hit[2] = true;
+				}
+			}
+			else if (player.face == 'R' && hit[3] != true) {
+				if (map[player.level][player.posX + 9 + n][player.posY + 4 + i] == 'E') {
+					id = wichEnemie();
+					killEnemie();
+					hit[3] = true;
+				}
+			}		
+		}
+	}
 	std::cout << "Attack" << std::endl;
 }
 //----------------------------TMTPMTMPT-----------------------------------------
@@ -295,24 +337,26 @@ void dispMap() {
 	for (int n = 0; n < 100; n++) {			// rows 
 		for (int i = 0; i < 192; i++) {		// colums
 			if (i != 181) {
-				std::cout << map[i][n];
+				std::cout << map[player.level][i][n];
 			}
 		}
 		std::cout << std::endl;
 	}
 }
 void createMap() {
-	for (int n = 0; n < 100; n++) {			// rows 
-		for (int i = 0; i < 192; i++) {		// colums
-			map[i][n] = '0';
+	for(int k = 0; k < 6; k++){
+		for (int n = 0; n < 100; n++) {			// rows 
+			for (int i = 0; i < 192; i++) {		// colums
+				map[k][i][n] = '0';
+			}
 		}
 	}
 }
 //---------------------------------------------------------------------
-void createBox(int xBox, int yBox, int sizeX, int sizeY) {
+void createBox(int level, int xBox, int yBox, int sizeX, int sizeY, char type) {
 	for (int n = 0; n < sizeY; n++) {		// rows
 		for (int i = 0; i < sizeX; i++) {	// colums
-			map[xBox + i][yBox + n] = '1';
+			map[level][xBox + i][yBox + n] = type;
 		}
 	}
 }
@@ -423,6 +467,7 @@ void moveLink(char dir) {
 		player.cY = 59;
 		player.attack = true;
 		attackSword();
+		move = false;
 	}
 	else if (dir == 'E' && menuActive == false) {
 		menuActive = true;
@@ -459,60 +504,99 @@ void playerPos() {
 	player.posY = player.y / 10;	
 	for (int n = 0; n < 10; n++) {
 		for (int i = 0; i < 9; i++) {
-			map[player.posX + i][player.posY + n] = 'C';
+			map[player.level][player.posX + i][player.posY + n] = 'C';
 		}
 	}
-
 	if (player.face == 'U') {
 		for (int n = 0; n < 9; n++) {
-			map[player.posX + n][player.posY + 10] = '0';
+			map[player.level][player.posX + n][player.posY + 10] = '0';
 		}
 	}
 	else if (player.face == 'D') {
 		for (int n = 0; n < 9; n++) {
-			map[player.posX + n][player.posY - 1] = '0';
+			map[player.level][player.posX + n][player.posY - 1] = '0';
 		}
 	}
 	else if (player.face == 'R') {
 		for (int n = 0; n < 10; n++) {
-			map[player.posX - 1][player.posY + n] = '0';
+			map[player.level][player.posX - 1][player.posY + n] = '0';
 		}
 	}
 	else if (player.face == 'L') {
 		for (int n = 0; n < 10; n++) {
-			map[player.posX + 9][player.posY + n] = '0';
+			map[player.level][player.posX + 9][player.posY + n] = '0';
 		}
 	}
 
 	//dispMap();
 }
 //---------------------------------------------------------------------
+void enemyPos(int id) {
+
+	for (int n = 0; n < 10; n++) {
+		for (int i = 0; i < 9; i++) {
+			map[player.level][enemie[id].posX + i][enemie[id].posY + n] = 'E';
+		}
+	}
+
+	if (enemie[id].face == 'U') {
+		for (int n = 0; n < 9; n++) {
+			map[player.level][enemie[id].posX + n][enemie[id].posY + 10] = '0';
+		}
+	}
+	else if (enemie[id].face == 'D') {
+		for (int n = 0; n < 9; n++) {
+			map[player.level][enemie[id].posX + n][enemie[id].posY - 1] = '0';
+		}
+	}
+	else if (enemie[id].face == 'R') {
+		for (int n = 0; n < 10; n++) {
+			map[player.level][enemie[id].posX - 1][enemie[id].posY + n] = '0';
+		}
+	}
+	else if (enemie[id].face == 'L') {
+		for (int n = 0; n < 10; n++) {
+			map[player.level][enemie[id].posX + 9][enemie[id].posY + n] = '0';
+		}
+	}
+}
+//---------------------------------------------------------------------
 void collision() {
-	for (int n = 0; n < 4; n++) {
+	for (int n = 0; n < 5; n++) {
 		hittmp[n] = '0';
 	}
 
 	for (int n = 0; n < 10; n++) {
-		if (map[player.posX + 9][player.posY + n] == '1') {
+		if (map[player.level][player.posX + 9][player.posY + n] == '1') {
 			hittmp[0] = 'R';
 		}
-		if (map[player.posX - 1][player.posY + n] == '1') {
+		if (map[player.level][player.posX - 1][player.posY + n] == '1') {
 			hittmp[1] = 'L';
 		}
 	}
 	for (int n = 0; n < 9; n++) {
-		if (map[player.posX + n][player.posY - 1] == '1') {
+		if (map[player.level][player.posX + n][player.posY - 1] == '1') {
 			hittmp[2] = 'U';
 		}
-		if (map[player.posX + n][player.posY + 10] == '1') {
+		if (map[player.level][player.posX + n][player.posY + 10] == '1') {
 			hittmp[3] = 'D';
 		}
+		if (map[player.level][player.posX + n][player.posY - 1] == 'E') {
+			hittmp[4] = 'C';
+			showCave();
+		}
 	}
+}
+//---------------------------------------------------------------------
+void showCave() {
+	swordItem = true;
 }
 //---------------------------------------------------------------------
 void playerAnimation() {
 	player.sizeX = 15;
 	player.sizeY = 16;
+	player_Wid = 96;
+	player_Hei = 90;
 	if (player.face == 'D') {
 		player.cX = 0;
 		if (player.idle != true) {
@@ -568,6 +652,7 @@ void swordAnimation() {
 		if (player.attack == false) {
 			player.cY = 0;
 			playerAnimation();
+			move = true;
 		}
 	}
 	else if (player.face == 'L') {
@@ -590,6 +675,7 @@ void swordAnimation() {
 			player.x += 72;
 			player.cY = 0;
 			playerAnimation();
+			move = true;
 		}
 	}
 	else if (player.face == 'U') {
@@ -611,6 +697,7 @@ void swordAnimation() {
 			player.y += 60;
 			player.cY = 0;
 			playerAnimation();
+			move = true;
 		}
 	}
 	else if (player.face == 'R') {
@@ -630,11 +717,14 @@ void swordAnimation() {
 		if (player.attack == false) {
 			player.cY = 0;
 			playerAnimation();
+			move = true;
 		}
 	}
+
 }
 //---------------------------------------------------------------------
 void update() {
+	int langd = enemie.size();
 	static int counter = 0;
 	counter++;
 	if (counter % 12 == 0) {
@@ -644,9 +734,7 @@ void update() {
 		else {
 			playerAnimation();
 		}
-	}
-	if (counter % 500 == 0) {
-	//	dispMap();
+		monsterWalk();
 	}
 }
 //---------------------------------------------------------------------
@@ -727,10 +815,12 @@ void entrance(char dir) {
 	else if (dir == 'R') {
 		background.cX += 256;
 		player.x = 10;
+		player.level = 0;
 	}
 	else if (dir == 'L') {
 		background.cX -= 256;
 		player.x = 1790;
+		player.level = 1;
 	}
 	setChar(true);
 }
@@ -747,7 +837,7 @@ void setChar(bool state) {
 	player.posY = player.y / 10;
 	for (int n = 0; n < 10; n++) {
 		for (int i = 0; i < 9; i++) {
-			map[player.posX + i][player.posY + n] = make;
+			map[player.level][player.posX + i][player.posY + n] = make;
 		}
 	}
 }
@@ -763,17 +853,17 @@ void render() {
 
 	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, background.cX, background.cY, background.sizeX, background.sizeY, COLORREF(RGB(255, 0, 255)));
 	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
-	
+	TransparentBlt(bufferHDC, enemie[0].x, enemie[0].y, enemie[0].Wid, enemie[0].Hei, enemieHdc, enemie[0].cX, enemie[0].cY, enemie[0].sizeX, enemie[0].sizeY, COLORREF(RGB(255, 0, 255)));
 	// enemies 
-	/*
+
 	int langd = enemie.size();
 	for (int n = 0; n < langd; n++) {
-		TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
+		TransparentBlt(bufferHDC, enemie[n].x, enemie[n].y, enemie[n].Wid, enemie[n].Hei, enemieHdc, enemie[n].cX, enemie[n].cY, enemie[n].sizeX, enemie[n].sizeY, COLORREF(RGB(255, 0, 255)));
 	}
-	*/
+
 	// dubbelbuffring
 	std::string nextHit;
-	for (int n = 0; n < 4; n++) {
+	for (int n = 0; n < 5; n++) {
 		nextHit.push_back(hittmp[n]);
 	}
 
@@ -821,6 +911,11 @@ int	initalizeAll(HWND hWnd) {
 	startScreen.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
 	oldBitmap[2] = (HBITMAP)SelectObject(startScreen.hdc, startScreen.map);
 
+	text = "bilder/enemiesprite.bmp";
+	enemieHdc = CreateCompatibleDC(hDC);
+	enemieMap = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[3] = (HBITMAP)SelectObject(enemieHdc, enemieMap);
+
 	startScreen.cX = 0;
 	startScreen.cY = 0;
 	startScreen.sizeX = 1331;
@@ -838,30 +933,99 @@ int	initalizeAll(HWND hWnd) {
 	AllocConsole();
 	freopen("CONOUT$", "w", stdout);
 	createMap();
-	// upper hill
-	createBox(108, 0, 84, 51);
-	//down hill
-	createBox(0, 91, 192, 8);
-	createBox(0, 63, 24, 37);
 	
+	enemie.push_back(monster());
+	
+	// upper hill
+	createBox(0, 108, 0, 84, 51, '1');
+	//down hill
+	createBox(0, 0, 91, 192, 8, '1');
+	createBox(0, 0, 63, 24, 37, '1');
+	createBox(0, 0, 0, 85, 20, '1');
+	createBox(0, 0, 20, 20, 30, '1');
+	createBox(0, 20, 20, 15, 15, '1');
+	createBox(0, 168, 63, 23, 30, '1');
+	createBox(0, 48, 10, 11, 10, 'E');
+	
+	createBox(1, 30, 30, 100, 50, '1');
 	
 	return 1;
 }
 //---------------------------------------------------------------------
-void monsterAi() {
+void monsterAi(int id) {
 
 }
 void monsterWalk() {
-
+	int langd = enemie.size();
+	for (int n = 0; n < langd; n++) {
+		monsterAi(n); 
+		enemie[n].x += 10;
+		enemie[n].posX = enemie[n].x / 10;
+		enemie[n].posY = enemie[n].y / 10;
+		enemyPos(n);
+	}
+	
 }
 void monsterAttack() {
 
 }
-void save() {
-
+void killEnemie(int id) {
+	enemie[id].hp -= 1;
+	if (enemie[id].hp <= 0) {
+		enemie.erase(enemie.begin() + id);
+	}
 }
-void load() {
+int wichEnemie() {
+	int langd = enemie.size();
+	for (int n = 0; n < langd; n++) {
+		
+	}
+	return 0;
+}
+void save() {
+	std::ofstream save;													// Öppnar filen save för att endast kunna skriva till
+	int langd = 0; //list.size();
+	if (langd > 10) {
+		langd = 10;														// Att den endast sparar de 10 bästa för de är de enda som används
+	}
+	save.open("highscorelist.txt");										// Öppnar filen "highscorelist.txt" 
+	if (save.is_open()) {												// Om den öppnas korrekt 
+		for (int n = 0; n < langd; n++) {
+			//save << list[n].name << "\t" << list[n].point << std::endl;		// Alla namn och deras poäng sparas på varsin rad med en \t emellan. 
+		}
+	}
+	else {																// Om filen inte kunde öppnas skrivs detta 
+		std::cout << "Error code 404. Kunde inte öppna filen";
+	}
+	save.close();
+}
+void loadScores() {
+	int dis, langd, n = 0, point;							// Olika variabler för att kunna substr raderna i filen
+	std::string str, tmpName, tmpPoint;
+	std::ifstream read;										// Öppnar filen highscorelista.txt och gör så man enbart kan läsa av den och inte skirva in i den
+	read.open("highscorelist.txt");
+	if (read.is_open()) {									// Ser om filen kunde öppnas, om den inte kan det betyder det att filen inte finns än, alltså att inga palindrom har sparats 
+		while (getline(read, str)) {
+			//list.push_back(player());						//Stoppar in en player in i listan
+			langd = str.size();								//Räknar ut längd 
+			dis = str.find("\t", 0);
+			tmpName = str.substr(0, dis);					//Delar upp namnet och poängen i två olika stränger. 
+			tmpPoint = str.substr(dis, langd - 1);
 
+			point = stoi(tmpPoint);							//Gör om poängsträngen till en int genom en inbyggd funktion
+
+			//list[n].name = tmpName;							//lägger in namn och poäng i listan
+			//list[n].point = point;
+
+			n++;
+		}
+	}
+	else {													// Vad som skrivs om filen inte finns
+		std::cout << "Error 405: Fil kunde inte öppnas och läsas: Rekomenderas att skriva någonting först";
+	/*	_getch();*/
+	}
+	read.close();											// Stänger filen så den kan användas igen senare av någonting annat
+	//return n;
 }
 void highscore() {
 
