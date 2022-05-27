@@ -59,6 +59,7 @@ struct user {
 	int		level = 0;
 };
 struct monster {
+	int		id = 0;
 	int		x = 800;
 	int		y = 500; 
 	int		posX = 800/10;
@@ -70,7 +71,7 @@ struct monster {
 	int		Hei = 90;
 	int		Wid = 96;
 	char	face = 'R';
-	int		hp = 5;
+	int		hp = 2;
 };
 // All might
 BG					 background, startScreen;
@@ -80,6 +81,7 @@ char				 map[6][192][100];
 char				 hittmp[5];
 char		         keyPressed;
 std::vector<monster> enemie;
+int					 monstLangd;
 // fonter
 HFONT		myFonts[3];
 // Device Contexts ----------------------------------------------------------
@@ -116,9 +118,9 @@ void		collision();
 void		createBox(int, int, int, int, int, char);
 // kill kill kill
 void		attackSword();
-void		killEnemie(); 
+void		killEnemie(int); 
 void		monsterWalk();
-int			wichEnemie();
+int			wichEnemie(int, int);
 void		enemyPos(int);
 // tmp
 void		dispMap();
@@ -301,29 +303,30 @@ void attackSword() {
 		for (int n = 0; n < 5; n++) {
 			if (player.face == 'U' && hit[0] != true) {
 				if (map[player.level][player.posX + 3 + i][player.posY - 1 - n] == 'E') {
-					id = wichEnemie();
-					killEnemie();
+					id = wichEnemie(player.posX + 3 + i, player.posY - 1 - n);
+					killEnemie(id);
 					hit[0] = true;
+					break;
 				}
 			}
 			else if (player.face == 'D' && hit[1] != true) {
 				if (map[player.level][player.posX + 3 + i][player.posY + 10 + n] == 'E') {
-					id = wichEnemie();
-					killEnemie();
+					id = wichEnemie(player.posX + 3 + i, player.posY + 10 + n);
+					killEnemie(id);
 					hit[1] = true;
 				}
 			}
 			else if (player.face == 'L' && hit[2] != true) {
 				if (map[player.level][player.posX - 1 - n][player.posY + 4 + i] == 'E') {
-					id = wichEnemie();
-					killEnemie();
+					id = wichEnemie(player.posX - 1 - n, player.posY + 4 + i);
+					killEnemie(id);
 					hit[2] = true;
 				}
 			}
 			else if (player.face == 'R' && hit[3] != true) {
 				if (map[player.level][player.posX + 9 + n][player.posY + 4 + i] == 'E') {
-					id = wichEnemie();
-					killEnemie();
+					id = wichEnemie(player.posX + 9 + n, player.posY + 4 + i);
+					killEnemie(id);
 					hit[3] = true;
 				}
 			}		
@@ -934,7 +937,10 @@ int	initalizeAll(HWND hWnd) {
 	freopen("CONOUT$", "w", stdout);
 	createMap();
 	
-	enemie.push_back(monster());
+	for (int n = 0; n < 1; n++) {
+		enemie.push_back(monster());
+		enemie[n].id = n;
+	}
 	
 	// upper hill
 	createBox(0, 108, 0, 84, 51, '1');
@@ -956,9 +962,9 @@ void monsterAi(int id) {
 
 }
 void monsterWalk() {
-	int langd = enemie.size();
-	for (int n = 0; n < langd; n++) {
-		monsterAi(n); 
+	monstLangd = enemie.size();
+	for (int n = 0; n < monstLangd; n++) {
+		//monsterAi(n); 
 		enemie[n].x += 10;
 		enemie[n].posX = enemie[n].x / 10;
 		enemie[n].posY = enemie[n].y / 10;
@@ -973,14 +979,22 @@ void killEnemie(int id) {
 	enemie[id].hp -= 1;
 	if (enemie[id].hp <= 0) {
 		enemie.erase(enemie.begin() + id);
+		monstLangd = enemie.size();
 	}
 }
-int wichEnemie() {
-	int langd = enemie.size();
-	for (int n = 0; n < langd; n++) {
-		
+int wichEnemie(int posX, int posY) {
+	int id = 0;
+	monstLangd = enemie.size();
+	for (int n = 0; n < monstLangd; n++) {
+		for (int i = 0; i < enemie[n].sizeX; i++) {			// columms
+			for (int k = 0; k < enemie[n].sizeY; k++) {		// rows
+				if (enemie[n].posX == posX && enemie[n].posY == posY) {
+					id = enemie[n].id;
+				}
+			}
+		}
 	}
-	return 0;
+	return id;
 }
 void save() {
 	std::ofstream save;													// Öppnar filen save för att endast kunna skriva till
