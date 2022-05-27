@@ -469,7 +469,7 @@ void moveLink(char dir) {
 	else if (dir == 'S' && swordItem == true && player.attack == false) {
 		player.cY = 59;
 		player.attack = true;
-		attackSword();
+		//attackSword();
 		move = false;
 	}
 	else if (dir == 'E' && menuActive == false) {
@@ -533,36 +533,7 @@ void playerPos() {
 
 	//dispMap();
 }
-//---------------------------------------------------------------------
-void enemyPos(int id) {
 
-	for (int n = 0; n < 10; n++) {
-		for (int i = 0; i < 9; i++) {
-			map[player.level][enemie[id].posX + i][enemie[id].posY + n] = 'E';
-		}
-	}
-
-	if (enemie[id].face == 'U') {
-		for (int n = 0; n < 9; n++) {
-			map[player.level][enemie[id].posX + n][enemie[id].posY + 10] = '0';
-		}
-	}
-	else if (enemie[id].face == 'D') {
-		for (int n = 0; n < 9; n++) {
-			map[player.level][enemie[id].posX + n][enemie[id].posY - 1] = '0';
-		}
-	}
-	else if (enemie[id].face == 'R') {
-		for (int n = 0; n < 10; n++) {
-			map[player.level][enemie[id].posX - 1][enemie[id].posY + n] = '0';
-		}
-	}
-	else if (enemie[id].face == 'L') {
-		for (int n = 0; n < 10; n++) {
-			map[player.level][enemie[id].posX + 9][enemie[id].posY + n] = '0';
-		}
-	}
-}
 //---------------------------------------------------------------------
 void collision() {
 	for (int n = 0; n < 5; n++) {
@@ -737,7 +708,7 @@ void update() {
 		else {
 			playerAnimation();
 		}
-		monsterWalk();
+		//monsterWalk();
 	}
 }
 //---------------------------------------------------------------------
@@ -856,11 +827,10 @@ void render() {
 
 	TransparentBlt(bufferHDC, 0, 0, app_Wid, app_Hei, background.hdc, background.cX, background.cY, background.sizeX, background.sizeY, COLORREF(RGB(255, 0, 255)));
 	TransparentBlt(bufferHDC, player.x, player.y, player_Wid, player_Hei, player.hdc, player.cX, player.cY, player.sizeX, player.sizeY, COLORREF(RGB(255, 0, 255)));
-	TransparentBlt(bufferHDC, enemie[0].x, enemie[0].y, enemie[0].Wid, enemie[0].Hei, enemieHdc, enemie[0].cX, enemie[0].cY, enemie[0].sizeX, enemie[0].sizeY, COLORREF(RGB(255, 0, 255)));
 	// enemies 
 
-	int langd = enemie.size();
-	for (int n = 0; n < langd; n++) {
+	monstLangd = enemie.size();
+	for (int n = 0; n < monstLangd; n++) {
 		TransparentBlt(bufferHDC, enemie[n].x, enemie[n].y, enemie[n].Wid, enemie[n].Hei, enemieHdc, enemie[n].cX, enemie[n].cY, enemie[n].sizeX, enemie[n].sizeY, COLORREF(RGB(255, 0, 255)));
 	}
 
@@ -870,7 +840,7 @@ void render() {
 		nextHit.push_back(hittmp[n]);
 	}
 
-	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit + ", " + std::to_string(player.sizeX) + ", " + std::to_string(player.sizeY) + ", " + std::to_string(player.cX) + ", " + std::to_string(player.cY);
+	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit + ", ";
 	SelectObject(bufferHDC, myFonts[2]);					// rubriken
 	SetTextColor(bufferHDC, COLORREF(RGB(2, 0, 110)));
 	TextOut(bufferHDC, 5, 5, cords.c_str(), cords.size());
@@ -937,11 +907,20 @@ int	initalizeAll(HWND hWnd) {
 	freopen("CONOUT$", "w", stdout);
 	createMap();
 	
-	for (int n = 0; n < 1; n++) {
+	for (int n = 0; n < 3; n++) {
 		enemie.push_back(monster());
 		enemie[n].id = n;
+		if (n == 1) {
+			enemie[n].x = 500;
+			enemie[n].y = 800;
+		}
+		else if (n == 2) {
+			enemie[n].x = 200;
+			enemie[n].y = 800;
+		}
 	}
-	
+
+	monsterWalk();
 	// upper hill
 	createBox(0, 108, 0, 84, 51, '1');
 	//down hill
@@ -961,6 +940,7 @@ int	initalizeAll(HWND hWnd) {
 void monsterAi(int id) {
 
 }
+//---------------------------------------------------------------------
 void monsterWalk() {
 	monstLangd = enemie.size();
 	for (int n = 0; n < monstLangd; n++) {
@@ -972,30 +952,76 @@ void monsterWalk() {
 	}
 	
 }
+//---------------------------------------------------------------------
 void monsterAttack() {
 
 }
+//---------------------------------------------------------------------
+void enemyPos(int id) {
+
+	for (int n = 0; n < 10; n++) {
+		for (int i = 0; i < 9; i++) {
+			map[player.level][enemie[id].posX + i][enemie[id].posY + n] = 'E';
+		}
+	}
+
+	if (enemie[id].face == 'U') {
+		for (int n = 0; n < 9; n++) {
+			map[player.level][enemie[id].posX + n][enemie[id].posY + 10] = '0';
+		}
+	}
+	else if (enemie[id].face == 'D') {
+		for (int n = 0; n < 9; n++) {
+			map[player.level][enemie[id].posX + n][enemie[id].posY - 1] = '0';
+		}
+	}
+	else if (enemie[id].face == 'R') {
+		for (int n = 0; n < 10; n++) {
+			map[player.level][enemie[id].posX - 1][enemie[id].posY + n] = '0';
+		}
+	}
+	else if (enemie[id].face == 'L') {
+		for (int n = 0; n < 10; n++) {
+			map[player.level][enemie[id].posX + 9][enemie[id].posY + n] = '0';
+		}
+	}
+}
+//---------------------------------------------------------------------
 void killEnemie(int id) {
 	enemie[id].hp -= 1;
 	if (enemie[id].hp <= 0) {
+		for (int n = 0; n < 9; n++) {
+			for (int i = 0; i < 10; i++) {
+				map[player.level][enemie[id].posX + n][enemie[id].posY + i] = '0';
+			}
+		}
 		enemie.erase(enemie.begin() + id);
 		monstLangd = enemie.size();
+		for (int n = 0; n < monstLangd; n++) {
+			enemie[n].id = n;
+		}
 	}
 }
+//---------------------------------------------------------------------
 int wichEnemie(int posX, int posY) {
-	int id = 0;
+	int id = 1000;
 	monstLangd = enemie.size();
 	for (int n = 0; n < monstLangd; n++) {
 		for (int i = 0; i < enemie[n].sizeX; i++) {			// columms
 			for (int k = 0; k < enemie[n].sizeY; k++) {		// rows
-				if (enemie[n].posX == posX && enemie[n].posY == posY) {
+				if (enemie[n].posX + i == posX && enemie[n].posY + k == posY) {
 					id = enemie[n].id;
 				}
 			}
 		}
 	}
+	if (id == 1000) {
+		std::cout << "iditon";
+		id = 0;
+	}
 	return id;
 }
+//---------------------------------------------------------------------
 void save() {
 	std::ofstream save;													// Öppnar filen save för att endast kunna skriva till
 	int langd = 0; //list.size();
