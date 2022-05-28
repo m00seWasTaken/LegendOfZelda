@@ -66,12 +66,15 @@ struct monster {
 	int		posY = 500/10;
 	int		cX = 0;					// en lin gå: y=16 px, x=15px
 	int		cY = 0;
-	int		sizeX = 16;
-	int		sizeY = 15;
+	int		sizeX = 17;
+	int		sizeY = 16;
+	int		mapSizeX = 10;
+	int		mapSizeY = 9;
 	int		Hei = 90;
 	int		Wid = 96;
 	char	face = 'R';
 	int		hp = 2;
+	char	hitBox[4] = { '0','0','0','0' };
 };
 // All might
 BG					 background, startScreen;
@@ -79,6 +82,7 @@ user				 player;
 bool				 move = true;
 char				 map[6][192][100];
 char				 hittmp[5];
+char				 enemieHit[4];
 char		         keyPressed;
 std::vector<monster> enemie;
 int					 monstLangd;
@@ -122,6 +126,8 @@ void		killEnemie(int);
 void		monsterWalk();
 int			wichEnemie(int, int);
 void		enemyPos(int);
+void		createMonster(int, int, int, int );
+void		monsterAnimation(int);
 // tmp
 void		dispMap();
 void		createMap();
@@ -469,7 +475,6 @@ void moveLink(char dir) {
 	else if (dir == 'S' && swordItem == true && player.attack == false) {
 		player.cY = 59;
 		player.attack = true;
-		//attackSword();
 		move = false;
 	}
 	else if (dir == 'E' && menuActive == false) {
@@ -533,7 +538,6 @@ void playerPos() {
 
 	//dispMap();
 }
-
 //---------------------------------------------------------------------
 void collision() {
 	for (int n = 0; n < 5; n++) {
@@ -555,7 +559,7 @@ void collision() {
 		if (map[player.level][player.posX + n][player.posY + 10] == '1') {
 			hittmp[3] = 'D';
 		}
-		if (map[player.level][player.posX + n][player.posY - 1] == 'E') {
+		if (map[player.level][player.posX + n][player.posY - 1] == 'C') {
 			hittmp[4] = 'C';
 			showCave();
 		}
@@ -708,7 +712,7 @@ void update() {
 		else {
 			playerAnimation();
 		}
-		//monsterWalk();
+		monsterWalk();
 	}
 }
 //---------------------------------------------------------------------
@@ -836,8 +840,11 @@ void render() {
 
 	// dubbelbuffring
 	std::string nextHit;
-	for (int n = 0; n < 5; n++) {
-		nextHit.push_back(hittmp[n]);
+	for (int n = 0; n < monstLangd; n++) {
+		for(int i = 0; i < 4; i++){
+			nextHit.push_back(enemie[n].hitBox[i]);
+		}
+		nextHit.push_back('|');
 	}
 
 	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit + ", ";
@@ -915,12 +922,14 @@ int	initalizeAll(HWND hWnd) {
 			enemie[n].y = 800;
 		}
 		else if (n == 2) {
-			enemie[n].x = 200;
-			enemie[n].y = 800;
+			enemie[n].x = 400;
+			enemie[n].y = 300;
+			enemie[n].cX = 120;
+			enemie[n].hp = 5;
 		}
 	}
 
-	monsterWalk();
+	//monsterWalk();
 	// upper hill
 	createBox(0, 108, 0, 84, 51, '1');
 	//down hill
@@ -930,7 +939,7 @@ int	initalizeAll(HWND hWnd) {
 	createBox(0, 0, 20, 20, 30, '1');
 	createBox(0, 20, 20, 15, 15, '1');
 	createBox(0, 168, 63, 23, 30, '1');
-	createBox(0, 48, 10, 11, 10, 'E');
+	createBox(0, 48, 10, 11, 10, 'C');
 	
 	createBox(1, 30, 30, 100, 50, '1');
 	
@@ -938,19 +947,84 @@ int	initalizeAll(HWND hWnd) {
 }
 //---------------------------------------------------------------------
 void monsterAi(int id) {
+	
+	int change;
+	// Bestämma om den ska snurra eller fortsätta 
+
+	// GÅ lite steg 
+
+	// OM Collision i en vägg byt håll
+
+	if (rand() % 10 == 0) {
+		change = rand() % 4;
+		if (change == 0) {
+			enemie[id].face = 'U';
+		}
+		else if (change == 1) {
+			enemie[id].face = 'D';
+		}
+		else if (change == 2) {
+			enemie[id].face = 'R';
+		}
+		else if (change == 3) {
+			enemie[id].face = 'L';
+		}
+	}
+
+	if (enemie[id].face == 'R' && enemie[id].hitBox[0] != 'R') {
+		enemie[id].x += 10;
+	}
+	else if (enemie[id].face == 'L' && enemie[id].hitBox[1] != 'L') {
+		enemie[id].x -= 10;
+	}
+	else if (enemie[id].face == 'U' && enemie[id].hitBox[2] != 'U') {
+		enemie[id].y -= 10;
+	}
+	else if (enemie[id].face == 'D' && enemie[id].hitBox[3] != 'D' ) {
+		enemie[id].y += 10;
+	}
 
 }
 //---------------------------------------------------------------------
 void monsterWalk() {
 	monstLangd = enemie.size();
 	for (int n = 0; n < monstLangd; n++) {
-		//monsterAi(n); 
-		enemie[n].x += 10;
-		enemie[n].posX = enemie[n].x / 10;
-		enemie[n].posY = enemie[n].y / 10;
+		monsterAi(n); 
 		enemyPos(n);
+		monsterAnimation(n);
 	}
 	
+}
+void monsterAnimation(int id) {
+
+	if(enemie[id].face == 'D') {
+		enemie[id].cX = 0;
+		enemie[id].cY += 30;
+		if (enemie[id].cY > 30) {
+			enemie[id].cY = 0;
+		}
+	}
+	else if (enemie[id].face == 'L') {
+		enemie[id].cX = 30;
+		enemie[id].cY += 30;
+		if (enemie[id].cY > 30) {
+			enemie[id].cY = 0;
+		}
+	}
+	else if (enemie[id].face == 'U') {
+		enemie[id].cX = 60;
+		enemie[id].cY += 30;
+		if (enemie[id].cY > 30) {
+			enemie[id].cY = 0;
+		}
+	}
+	else if (enemie[id].face == 'R') {
+		enemie[id].cX = 90;
+		enemie[id].cY += 30;
+		if (enemie[id].cY > 30) {
+			enemie[id].cY = 0;
+		}
+	}
 }
 //---------------------------------------------------------------------
 void monsterAttack() {
@@ -958,7 +1032,8 @@ void monsterAttack() {
 }
 //---------------------------------------------------------------------
 void enemyPos(int id) {
-
+	enemie[id].posX = enemie[id].x / 10;
+	enemie[id].posY = enemie[id].y / 10;
 	for (int n = 0; n < 10; n++) {
 		for (int i = 0; i < 9; i++) {
 			map[player.level][enemie[id].posX + i][enemie[id].posY + n] = 'E';
@@ -983,6 +1058,31 @@ void enemyPos(int id) {
 	else if (enemie[id].face == 'L') {
 		for (int n = 0; n < 10; n++) {
 			map[player.level][enemie[id].posX + 9][enemie[id].posY + n] = '0';
+		}
+	}
+
+	for (int n = 0; n < 4; n++) {
+		enemie[id].hitBox[n] = '0';
+	}
+
+	for (int n = 0; n < 10; n++) {
+		if (map[player.level][enemie[id].posX + 9][enemie[id].posY + n] == '1') {
+			enemie[id].hitBox[0] = 'R';
+			enemie[id].face = 'L';
+		}
+		if (map[player.level][enemie[id].posX - 1][enemie[id].posY + n] == '1') {
+			enemie[id].hitBox[1] = 'L';
+			enemie[id].face = 'R';
+		}
+	}
+	for (int n = 0; n < 9; n++) {
+		if (map[player.level][enemie[id].posX + n][enemie[id].posY - 1] == '1') {
+			enemie[id].hitBox[2] = 'U';
+			enemie[id].face = 'D';
+		}
+		if (map[player.level][enemie[id].posX + n][enemie[id].posY + 10] == '1') {
+			enemie[id].hitBox[3] = 'D';
+			enemie[id].face = 'U';
 		}
 	}
 }
@@ -1011,6 +1111,7 @@ int wichEnemie(int posX, int posY) {
 			for (int k = 0; k < enemie[n].sizeY; k++) {		// rows
 				if (enemie[n].posX + i == posX && enemie[n].posY + k == posY) {
 					id = enemie[n].id;
+					return id;
 				}
 			}
 		}
