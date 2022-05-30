@@ -88,6 +88,7 @@ char				 enemieHit[4];
 char		         keyPressed;
 std::vector<monster> enemie;
 int					 monstLangd;
+char				 kb = '0';
 // fonter
 HFONT		myFonts[3];
 // Device Contexts ----------------------------------------------------------
@@ -130,6 +131,7 @@ int			wichEnemie(int, int);
 void		enemyPos(int);
 void		createMonster(int, char, int, int, int, int);
 void		monsterAnimation(int);
+void		knockback(char);
 // tmp
 void		dispMap();
 void		createMap();
@@ -308,7 +310,7 @@ void attackSword() {
 	bool hit[4] = { false, false, false, false };
 	int id;
 	for(int i = 0; i < 3; i++){
-		for (int n = 0; n < 5; n++) {
+		for (int n = 0; n < 6; n++) {
 			if (player.face == 'U' && hit[0] != true) {
 				if (map[player.level][player.posX + 3 + i][player.posY - 1 - n] == 'E') {
 					id = wichEnemie(player.posX + 3 + i, player.posY - 1 - n);
@@ -705,7 +707,7 @@ void swordAnimation() {
 //---------------------------------------------------------------------
 void update() {
 	int langd = enemie.size();
-	static int counter = 0;
+	static int counter = 0, duration;
 	counter++;
 	if (counter % 12 == 0) {
 		if (player.attack == true) {
@@ -715,6 +717,14 @@ void update() {
 			playerAnimation();
 		}
 		monsterWalk();
+	}
+	if (kb != '0') {
+		moveLink(kb);
+		duration++;
+		if (duration > 8) {
+			kb = '0';
+			duration = 0;
+		}
 	}
 }
 //---------------------------------------------------------------------
@@ -1001,11 +1011,11 @@ void enemyPos(int id) {
 
 	for (int n = 0; n < 10; n++) {
 		if (map[player.level][enemie[id].posX + 9][enemie[id].posY + n] != '0') {
-			
 			enemie[id].hitBox[0] = 'R';
 			enemie[id].face = 'L';
 			if (map[player.level][enemie[id].posX + 9][enemie[id].posY + n] == 'C') {
 				player.hp -= enemie[id].attack;
+				kb = 'R';
 			}
 		}
 		if (map[player.level][enemie[id].posX - 1][enemie[id].posY + n] != '0') {
@@ -1013,6 +1023,7 @@ void enemyPos(int id) {
 			enemie[id].face = 'R';
 			if (map[player.level][enemie[id].posX - 1][enemie[id].posY + n] == 'C') {
 				player.hp -= enemie[id].attack;
+				kb = 'L';
 			}
 		}
 	}
@@ -1022,6 +1033,7 @@ void enemyPos(int id) {
 			enemie[id].face = 'D';
 			if (map[player.level][enemie[id].posX + n][enemie[id].posY - 1] == 'C') {
 				player.hp -= enemie[id].attack;
+				kb = 'U';
 			}
 		}
 		if (map[player.level][enemie[id].posX + n][enemie[id].posY + 10] != '0') {
@@ -1029,6 +1041,7 @@ void enemyPos(int id) {
 			enemie[id].face = 'U';
 			if (map[player.level][enemie[id].posX + n][enemie[id].posY + 10] == 'C') {
 				player.hp -= enemie[id].attack;
+				kb = 'D';
 			}
 		}
 	}
