@@ -60,6 +60,7 @@ struct user {
 };
 struct monster {
 	int		id = 0;
+	char	type = 'A';
 	int		x = 800;
 	int		y = 500; 
 	int		posX = 800/10;
@@ -74,6 +75,7 @@ struct monster {
 	int		Wid = 96;
 	char	face = 'R';
 	int		hp = 2;
+	int		attack = 1;
 	char	hitBox[4] = { '0','0','0','0' };
 };
 // All might
@@ -119,14 +121,14 @@ void		showCave();
 void		calculateBorder();		// räkna ut om man borde flyta backgrund
 void		playerPos();
 void		collision();
-void		createBox(int, int, int, int, int, char);
+void		createBox(int, int, int, int, char);
 // kill kill kill
 void		attackSword();
 void		killEnemie(int); 
 void		monsterWalk();
 int			wichEnemie(int, int);
 void		enemyPos(int);
-void		createMonster(int, int, int, int );
+void		createMonster(int, char, int, int, int, int);
 void		monsterAnimation(int);
 // tmp
 void		dispMap();
@@ -847,103 +849,12 @@ void render() {
 		nextHit.push_back('|');
 	}
 
-	std::string cords = std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit + ", ";
+	std::string cords = std::to_string(player.hp) + " | " + std::to_string(player.x) + ", " + std::to_string(player.y) + ", " + nextHit + ", ";
 	SelectObject(bufferHDC, myFonts[2]);					// rubriken
 	SetTextColor(bufferHDC, COLORREF(RGB(2, 0, 110)));
 	TextOut(bufferHDC, 5, 5, cords.c_str(), cords.size());
 	BitBlt(hDC, 0, 0, innerWidth, innerHeight, bufferHDC, 0, 0, SRCCOPY);
 	
-}
-//---------------------------------------------------------------------
-int	initalizeAll(HWND hWnd) {
-	srand(time(NULL));
-
-	// H�mta f�nstrets riktiga bredd & h�jd
-	RECT		windowRect;
-	GetClientRect(hWnd, &windowRect);
-	innerWidth = windowRect.right;
-	innerHeight = windowRect.bottom;
-
-	hDC = GetDC(hWnd);			// Koppla f�nstret till en DC
-
-	// skapar fonter
-	AddFontResource("The Wild Breath of Zelda.otf");
-	myFonts[0] = CreateFontA(42, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("The Wild Breath of Zelda"));
-	myFonts[1] = CreateFontA(90, 0, 0, 0, FW_DONTCARE, FALSE, TRUE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("The Wild Breath of Zelda"));
-	myFonts[2] = CreateFontA(90, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
-		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Arial"));
-
-
-	std::string text = "bilder/linkWorldmap.bmp";
-	background.hdc = CreateCompatibleDC(hDC);
-	background.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	oldBitmap[0] = (HBITMAP)SelectObject(background.hdc, background.map);
-	
-	text = "bilder/linkSprites.bmp";
-	player.hdc = CreateCompatibleDC(hDC);
-	player.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	oldBitmap[1] = (HBITMAP)SelectObject(player.hdc, player.map);
-
-	text = "bilder/linkScreen.bmp";
-	startScreen.hdc = CreateCompatibleDC(hDC);
-	startScreen.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	oldBitmap[2] = (HBITMAP)SelectObject(startScreen.hdc, startScreen.map);
-
-	text = "bilder/enemiesprite.bmp";
-	enemieHdc = CreateCompatibleDC(hDC);
-	enemieMap = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
-	oldBitmap[3] = (HBITMAP)SelectObject(enemieHdc, enemieMap);
-
-	startScreen.cX = 0;
-	startScreen.cY = 0;
-	startScreen.sizeX = 1331;
-	startScreen.sizeY = 752;
-
-
-	// Buffer
-	bufferHDC = CreateCompatibleDC(hDC);				// Skapa en hdc f�r bakgrundsbilden
-	bitmapbuff = CreateCompatibleBitmap(hDC, innerWidth, innerHeight);
-	SelectObject(bufferHDC, bitmapbuff);
-	//Ger CPU-frekvensen som anv�nds med performanceCounter();
-	CPUFreq = getFreq();
-
-	// tmp
-	AllocConsole();
-	freopen("CONOUT$", "w", stdout);
-	createMap();
-	
-	for (int n = 0; n < 3; n++) {
-		enemie.push_back(monster());
-		enemie[n].id = n;
-		if (n == 1) {
-			enemie[n].x = 500;
-			enemie[n].y = 800;
-		}
-		else if (n == 2) {
-			enemie[n].x = 400;
-			enemie[n].y = 300;
-			enemie[n].cX = 120;
-			enemie[n].hp = 5;
-		}
-	}
-
-	//monsterWalk();
-	// upper hill
-	createBox(0, 108, 0, 84, 51, '1');
-	//down hill
-	createBox(0, 0, 91, 192, 8, '1');
-	createBox(0, 0, 63, 24, 37, '1');
-	createBox(0, 0, 0, 85, 20, '1');
-	createBox(0, 0, 20, 20, 30, '1');
-	createBox(0, 20, 20, 15, 15, '1');
-	createBox(0, 168, 63, 23, 30, '1');
-	createBox(0, 48, 10, 11, 10, 'C');
-	
-	createBox(1, 30, 30, 100, 50, '1');
-	
-	return 1;
 }
 //---------------------------------------------------------------------
 void monsterAi(int id) {
@@ -997,32 +908,55 @@ void monsterWalk() {
 }
 void monsterAnimation(int id) {
 
+	int arrX[4] = { 0, 30, 60, 90 };
+	int	arrY[2] = { 0, 30 };
+	if (enemie[id].type == 'B') {
+		for (int n = 0; n < 4; n++) {
+			arrX[n] = 120 + 30 * n;
+		}
+	}
+	else if (enemie[id].type == 'C') {
+		for (int n = 0; n < 4; n++) {
+			arrX[n] = 30 * n;
+			if (n < 2) {
+				arrY[n] = 60 + 30 * n;
+			}
+		}
+	}
+	else if (enemie[id].type == 'D') {
+		for (int n = 0; n < 4; n++) {
+			arrX[n] = 120 + 30 * n;
+			if (n < 2) {
+				arrY[n] = 60 + 30 * n;
+			}
+		}
+	}
 	if(enemie[id].face == 'D') {
-		enemie[id].cX = 0;
+		enemie[id].cX = arrX[0];
 		enemie[id].cY += 30;
-		if (enemie[id].cY > 30) {
-			enemie[id].cY = 0;
+		if (enemie[id].cY > arrY[1]) {
+			enemie[id].cY = arrY[0];
 		}
 	}
 	else if (enemie[id].face == 'L') {
-		enemie[id].cX = 30;
+		enemie[id].cX = arrX[1];
 		enemie[id].cY += 30;
-		if (enemie[id].cY > 30) {
-			enemie[id].cY = 0;
+		if (enemie[id].cY > arrY[1]) {
+			enemie[id].cY = arrY[0];
 		}
 	}
 	else if (enemie[id].face == 'U') {
-		enemie[id].cX = 60;
+		enemie[id].cX = arrX[2];
 		enemie[id].cY += 30;
-		if (enemie[id].cY > 30) {
-			enemie[id].cY = 0;
+		if (enemie[id].cY > arrY[1]) {
+			enemie[id].cY = arrY[0];
 		}
 	}
 	else if (enemie[id].face == 'R') {
-		enemie[id].cX = 90;
+		enemie[id].cX = arrX[3];
 		enemie[id].cY += 30;
-		if (enemie[id].cY > 30) {
-			enemie[id].cY = 0;
+		if (enemie[id].cY > arrY[1]) {
+			enemie[id].cY = arrY[0];
 		}
 	}
 }
@@ -1066,23 +1000,36 @@ void enemyPos(int id) {
 	}
 
 	for (int n = 0; n < 10; n++) {
-		if (map[player.level][enemie[id].posX + 9][enemie[id].posY + n] == '1') {
+		if (map[player.level][enemie[id].posX + 9][enemie[id].posY + n] != '0') {
+			
 			enemie[id].hitBox[0] = 'R';
 			enemie[id].face = 'L';
+			if (map[player.level][enemie[id].posX + 9][enemie[id].posY + n] == 'C') {
+				player.hp -= enemie[id].attack;
+			}
 		}
-		if (map[player.level][enemie[id].posX - 1][enemie[id].posY + n] == '1') {
+		if (map[player.level][enemie[id].posX - 1][enemie[id].posY + n] != '0') {
 			enemie[id].hitBox[1] = 'L';
 			enemie[id].face = 'R';
+			if (map[player.level][enemie[id].posX - 1][enemie[id].posY + n] == 'C') {
+				player.hp -= enemie[id].attack;
+			}
 		}
 	}
 	for (int n = 0; n < 9; n++) {
-		if (map[player.level][enemie[id].posX + n][enemie[id].posY - 1] == '1') {
+		if (map[player.level][enemie[id].posX + n][enemie[id].posY - 1] != '0') {
 			enemie[id].hitBox[2] = 'U';
 			enemie[id].face = 'D';
+			if (map[player.level][enemie[id].posX + n][enemie[id].posY - 1] == 'C') {
+				player.hp -= enemie[id].attack;
+			}
 		}
-		if (map[player.level][enemie[id].posX + n][enemie[id].posY + 10] == '1') {
+		if (map[player.level][enemie[id].posX + n][enemie[id].posY + 10] != '0') {
 			enemie[id].hitBox[3] = 'D';
 			enemie[id].face = 'U';
+			if (map[player.level][enemie[id].posX + n][enemie[id].posY + 10] == 'C') {
+				player.hp -= enemie[id].attack;
+			}
 		}
 	}
 }
@@ -1123,6 +1070,17 @@ int wichEnemie(int posX, int posY) {
 	return id;
 }
 //---------------------------------------------------------------------
+void createMonster(int id, char type, int x, int y, int hp, int attack) {
+	enemie.push_back(monster());
+	enemie[id].id = id;
+	enemie[id].type = type;
+	enemie[id].x = x;
+	enemie[id].y = y;
+	enemie[id].hp = hp;
+	enemie[id].attack = attack;
+}
+//---------------------------------------------------------------------
+
 void save() {
 	std::ofstream save;													// Öppnar filen save för att endast kunna skriva till
 	int langd = 0; //list.size();
@@ -1196,6 +1154,115 @@ BOOL initInstance(HINSTANCE hInstance, int nCmdShow) {
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
 	return TRUE;
+}
+//---------------------------------------------------------------------
+int	initalizeAll(HWND hWnd) {
+	srand(time(NULL));
+
+	// H�mta f�nstrets riktiga bredd & h�jd
+	RECT		windowRect;
+	GetClientRect(hWnd, &windowRect);
+	innerWidth = windowRect.right;
+	innerHeight = windowRect.bottom;
+
+	hDC = GetDC(hWnd);			// Koppla f�nstret till en DC
+
+	// skapar fonter
+	AddFontResource("The Wild Breath of Zelda.otf");
+	myFonts[0] = CreateFontA(42, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("The Wild Breath of Zelda"));
+	myFonts[1] = CreateFontA(90, 0, 0, 0, FW_DONTCARE, FALSE, TRUE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("The Wild Breath of Zelda"));
+	myFonts[2] = CreateFontA(90, 0, 0, 0, FW_DONTCARE, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_OUTLINE_PRECIS,
+		CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, VARIABLE_PITCH, TEXT("Arial"));
+
+
+	std::string text = "bilder/linkWorldmap.bmp";
+	background.hdc = CreateCompatibleDC(hDC);
+	background.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[0] = (HBITMAP)SelectObject(background.hdc, background.map);
+
+	text = "bilder/linkSprites.bmp";
+	player.hdc = CreateCompatibleDC(hDC);
+	player.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[1] = (HBITMAP)SelectObject(player.hdc, player.map);
+
+	text = "bilder/linkScreen.bmp";
+	startScreen.hdc = CreateCompatibleDC(hDC);
+	startScreen.map = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[2] = (HBITMAP)SelectObject(startScreen.hdc, startScreen.map);
+
+	text = "bilder/enemiesprite.bmp";
+	enemieHdc = CreateCompatibleDC(hDC);
+	enemieMap = (HBITMAP)LoadImage(NULL, (LPCTSTR)(text.c_str()), IMAGE_BITMAP, 0, 0, LR_LOADFROMFILE);
+	oldBitmap[3] = (HBITMAP)SelectObject(enemieHdc, enemieMap);
+
+	startScreen.cX = 0;
+	startScreen.cY = 0;
+	startScreen.sizeX = 1331;
+	startScreen.sizeY = 752;
+
+
+	// Buffer
+	bufferHDC = CreateCompatibleDC(hDC);				// Skapa en hdc f�r bakgrundsbilden
+	bitmapbuff = CreateCompatibleBitmap(hDC, innerWidth, innerHeight);
+	SelectObject(bufferHDC, bitmapbuff);
+	//Ger CPU-frekvensen som anv�nds med performanceCounter();
+	CPUFreq = getFreq();
+
+	// tmp
+	AllocConsole();
+	freopen("CONOUT$", "w", stdout);
+	createMap();
+
+	int monsterStats[4][4] = { {800 , 500, 2 , 1} , {400 , 300, 5 , 2} , {500 , 800, 2 , 1} , {800 , 300, 5 , 2} };
+	char monsterType[4] = { 'A', 'B', 'C', 'D' };
+	
+	for (int n = 0; n < 4; n++) {
+		createMonster(n, monsterType[n], monsterStats[n][0], monsterStats[n][1], monsterStats[n][2], monsterStats[n][3]);
+	}
+	
+	/*
+	for (int n = 0; n < 4; n++) {
+		//createMonster(n, )
+		enemie.push_back(monster());
+		enemie[n].id = n;
+		if (n == 1) {
+			enemie[n].x = 400;
+			enemie[n].y = 300;
+			//enemie[n].cX = 120;
+			enemie[n].hp = 5;
+			enemie[n].type = 'B';
+		}
+		else if (n == 2) {
+			enemie[n].x = 500;
+			enemie[n].y = 800;
+			enemie[n].type = 'C';
+		}
+		else if (n == 3) {
+			enemie[n].x = 800;
+			enemie[n].y = 300;
+			//enemie[n].cX = 120;
+			enemie[n].hp = 4;
+			enemie[n].type = 'D';
+		}
+	}
+	*/
+	//monsterWalk();
+	// upper hill
+	createBox(0, 108, 0, 84, 51, '1');
+	//down hill
+	createBox(0, 0, 91, 192, 8, '1');
+	createBox(0, 0, 63, 24, 37, '1');
+	createBox(0, 0, 0, 85, 20, '1');
+	createBox(0, 0, 20, 20, 30, '1');
+	createBox(0, 20, 20, 15, 15, '1');
+	createBox(0, 168, 63, 23, 30, '1');
+	createBox(0, 48, 10, 11, 10, 'C');
+
+	createBox(1, 30, 30, 100, 50, '1');
+
+	return 1;
 }
 //---------------------------------------------------------------------
 ATOM doRegister(HINSTANCE hi) {
